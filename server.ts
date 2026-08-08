@@ -60,8 +60,8 @@ const initialDb = {
 
   layouts: [
     {
-      id: "lay_rev_1",
-      resellerId: "usr_rev_1",
+      id: "lay_master",
+      resellerId: "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
       overlayOpacity: 0.35,
       apps: [
@@ -104,42 +104,42 @@ const initialDb = {
       updatedAt: new Date().toISOString()
     },
     {
-      id: "lay_rev_2",
-      resellerId: "usr_rev_2",
-      backgroundUrl: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1920&q=80",
-      overlayOpacity: 0.4,
+      id: "lay_rev_1",
+      resellerId: "usr_rev_1",
+      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+      overlayOpacity: 0.35,
       apps: [
         {
           id: 1,
-          name: "Master TV Player",
-          packageName: "com.mastertv.play",
-          iconUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
+          name: "Luna Live IPTV",
+          packageName: "com.luna.iptvplayer",
+          iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
+          deepLink: "luna://live"
         },
         {
           id: 2,
-          name: "CineMaster Pro",
-          packageName: "com.mastertv.vod",
-          iconUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
+          name: "Cine Filmes & Séries",
+          packageName: "com.luna.vodmovies",
+          iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80",
+          deepLink: "luna://vod"
         },
         {
           id: 3,
-          name: "Prime Video",
-          packageName: "com.amazon.amazonvideo.livingroom",
-          iconUrl: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=200&auto=format&fit=crop&q=80",
+          name: "YouTube TV",
+          packageName: "com.google.android.youtube.tv",
+          iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80",
           deepLink: ""
         },
         {
           id: 4,
-          name: "Max HBO",
-          packageName: "com.hbo.hbonow",
-          iconUrl: "https://images.unsplash.com/photo-1586899028174-e7098604235b?w=200&auto=format&fit=crop&q=80",
+          name: "Netflix",
+          packageName: "com.netflix.mediaclient",
+          iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80",
           deepLink: ""
         },
         {
           id: 5,
-          name: "Ajustes do Aparelho",
+          name: "Configurações TV",
           packageName: "com.android.settings",
           iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80",
           deepLink: ""
@@ -161,42 +161,6 @@ const initialDb = {
       notes: "Cliente mensal em dia",
       lastSeen: new Date().toISOString(),
       createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
-    },
-    {
-      id: "cli_102",
-      resellerId: "usr_rev_1",
-      clientName: "Maria Oliveira - Quarto Casal",
-      macAddress: "B1:C2:D3:E4:F5:A6",
-      deviceToken: "DEV-B1C2D3E4F5A6",
-      expirationDate: new Date(Date.now() + 2 * 86400000).toISOString(),
-      status: "active" as const,
-      notes: "Expirando em breve (2 dias)",
-      lastSeen: new Date(Date.now() - 1200000).toISOString(),
-      createdAt: new Date(Date.now() - 28 * 86400000).toISOString()
-    },
-    {
-      id: "cli_103",
-      resellerId: "usr_rev_1",
-      clientName: "Carlos Eduardo - TV Box Quarto",
-      macAddress: "12:34:56:78:9A:BC",
-      deviceToken: "DEV-123456789ABC",
-      expirationDate: new Date(Date.now() - 5 * 86400000).toISOString(),
-      status: "expired" as const,
-      notes: "Aguardando renovação Pix",
-      lastSeen: new Date(Date.now() - 86400000 * 4).toISOString(),
-      createdAt: new Date(Date.now() - 35 * 86400000).toISOString()
-    },
-    {
-      id: "cli_201",
-      resellerId: "usr_rev_2",
-      clientName: "Roberto Santos - FireStick Living",
-      macAddress: "FE:DC:BA:98:76:54",
-      deviceToken: "DEV-FEDCBA987654",
-      expirationDate: new Date(Date.now() + 180 * 86400000).toISOString(),
-      status: "active" as const,
-      notes: "Plano Semestral VIP",
-      lastSeen: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 2 * 86400000).toISOString()
     }
   ] as ClientDevice[],
 
@@ -212,28 +176,7 @@ const initialDb = {
     updatedAt: new Date().toISOString()
   } as OtaVersion,
 
-  apiLogs: [
-    {
-      id: "log_1",
-      token: "REV-VIP-8822",
-      endpoint: "/api/v1/launcher/config",
-      ip: "187.54.12.99",
-      userAgent: "LunaLauncherApp/2.1.0 (Android TV 11; Xiaomi MiBoxS)",
-      timestamp: new Date().toISOString(),
-      status: "success" as const,
-      responseCode: 200
-    },
-    {
-      id: "log_2",
-      token: "DEV-AABBCC112233",
-      endpoint: "/api/v1/launcher/config",
-      ip: "201.88.43.12",
-      userAgent: "LunaLauncherApp/2.1.0 (Android TV 10; Tanix TX3)",
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-      status: "success" as const,
-      responseCode: 200
-    }
-  ] as ApiLog[]
+  apiLogs: [] as ApiLog[]
 };
 
 // Database helper
@@ -270,7 +213,6 @@ const db = new DB();
 // Express setup
 const app = express();
 
-// Habilita CORS para aceitar requisições de qualquer origem (Frontend Hostinger)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -314,15 +256,19 @@ function resolveLayoutAndClient(tokenInput?: string) {
     reseller = db.data.users.find(u => u.resellerToken === token);
   }
 
+  // FALLBACK CORRIGIDO: Se não encontrar token ou for acesso genérico sem token,
+  // associa ao Master Admin ou ao primeiro usuário disponível.
   if (!reseller) {
-    reseller = db.data.users.find(u => u.role === "reseller") || db.data.users[0];
+    reseller = db.data.users.find(u => u.id === "usr_master") || db.data.users[0];
   }
 
-  let layout = db.data.layouts.find(l => l.resellerId === reseller?.id);
+  // Busca o layout do revendedor retornado OU usa o primeiro layout cadastrado no banco
+  let layout = db.data.layouts.find(l => l.resellerId === reseller?.id) || db.data.layouts[0];
+
   if (!layout) {
     layout = {
       id: "lay_default",
-      resellerId: reseller?.id || "usr_rev_1",
+      resellerId: reseller?.id || "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
       overlayOpacity: 0.35,
       apps: [
@@ -708,7 +654,12 @@ app.get("/api/admin/stats", (req, res) => {
 
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
-  const layout = db.data.layouts.find(l => l.resellerId === resellerId);
+  let layout = db.data.layouts.find(l => l.resellerId === resellerId);
+
+  // Se for busca por master e não encontrar layout específico, devolve o primeiro disponível
+  if (!layout) {
+    layout = db.data.layouts[0];
+  }
 
   if (!layout) {
     return res.status(404).json({ message: "Layout não encontrado." });
