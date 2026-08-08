@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { 
   User, 
@@ -268,6 +269,14 @@ const db = new DB();
 
 // Express setup
 const app = express();
+
+// Habilita CORS para aceitar requisições de qualquer origem (Frontend Hostinger)
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -294,7 +303,6 @@ function recordApiLog(token: string, endpoint: string, req: express.Request, sta
 // 1. LAUNCHER PUBLIC REST API ENDPOINTS (USED BY LUNA LAUNCHER)
 // -------------------------------------------------------------
 
-// Helper function to resolve reseller and layout from token/mac
 function resolveLayoutAndClient(tokenInput?: string) {
   const token = (tokenInput || "").trim();
   let client = db.data.clients.find(c => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
@@ -306,7 +314,6 @@ function resolveLayoutAndClient(tokenInput?: string) {
     reseller = db.data.users.find(u => u.resellerToken === token);
   }
 
-  // Fallback to first reseller or default master layout if no token or token not found
   if (!reseller) {
     reseller = db.data.users.find(u => u.role === "reseller") || db.data.users[0];
   }
@@ -332,10 +339,6 @@ function resolveLayoutAndClient(tokenInput?: string) {
   return { client, reseller, layout };
 }
 
-/**
- * GET /apps.json or /api/v1/launcher/apps.json
- * Returns the list of 5 fixed apps with multi-field compatibility aliases
- */
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
@@ -358,7 +361,6 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
     action: app.packageName
   }));
 
-  // Return both top-level apps array and object for universal Android JSON parser compatibility
   return res.json({
     status: "success",
     total: formattedApps.length,
@@ -369,10 +371,6 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 app.get("/apps.json", handleAppsJson);
 app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
-/**
- * GET /img.json or /api/v1/launcher/img.json
- * Returns background image configuration with multi-field compatibility aliases
- */
 const handleImgJson = (req: express.Request, res: express.Response) => {
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
@@ -395,10 +393,6 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
 app.get("/img.json", handleImgJson);
 app.get("/api/v1/launcher/img.json", handleImgJson);
 
-/**
- * GET /version.json or /api/v1/launcher/version.json or /api/v1/launcher/version
- * Returns OTA version info with multi-field compatibility aliases
- */
 const handleVersionJson = (req: express.Request, res: express.Response) => {
   recordApiLog("OTA_CLIENT", req.path, req, "success", 200);
 
@@ -430,11 +424,6 @@ app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version", handleVersionJson);
 
-/**
- * GET /api/v1/launcher/config
- * Param: token (Device token, MAC or Reseller token)
- * Returns background, 5 apps layout, and client subscription state with aliases
- */
 app.get("/api/v1/launcher/config", (req, res) => {
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
 
@@ -464,7 +453,6 @@ app.get("/api/v1/launcher/config", (req, res) => {
     });
   }
 
-  // Determine client subscription status
   let clientInfo = undefined;
   if (client) {
     const expDate = new Date(client.expirationDate);
@@ -530,12 +518,8 @@ app.get("/api/v1/launcher/config", (req, res) => {
   return res.json(responsePayload);
 });
 
-/**
- * POST /api/v1/launcher/ping
- * Heartbeat / telemetry from Luna Launcher Android App
- */
 app.post("/api/v1/launcher/ping", (req, res) => {
-  const { token, macAddress, appVersion, androidVersion, deviceModel } = req.body;
+  const { token, macAddress } = req.body;
 
   if (token) {
     const client = db.data.clients.find(c => c.deviceToken === token || c.macAddress.toUpperCase() === (macAddress || "").toUpperCase());
@@ -552,7 +536,6 @@ app.post("/api/v1/launcher/ping", (req, res) => {
 // 2. BACKEND ADMIN & RESELLER MANAGEMENT APIS FOR WEB PANEL
 // -------------------------------------------------------------
 
-// Simple auth check simulation
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -570,11 +553,9 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(403).json({ message: "Sua conta de revendedor está bloqueada." });
   }
 
-  // Update last login
   user.lastLogin = new Date().toISOString();
   db.save();
 
-  // Simple session token
   const token = `session_${user.id}_${Date.now()}`;
 
   return res.json({
@@ -591,11 +572,9 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-// Master: Get all resellers & global stats
 app.get("/api/admin/resellers", (req, res) => {
   const resellers = db.data.users.filter(u => u.role === "reseller");
   
-  // Attach calculated client counts
   const result = resellers.map(r => {
     const clients = db.data.clients.filter(c => c.resellerId === r.id);
     const activeClients = clients.filter(c => new Date(c.expirationDate) > new Date() && c.status === "active").length;
@@ -609,7 +588,6 @@ app.get("/api/admin/resellers", (req, res) => {
   return res.json(result);
 });
 
-// Master: Create or update reseller
 app.post("/api/admin/resellers", (req, res) => {
   const { id, name, email, resellerToken, clientLimit, status } = req.body;
 
@@ -618,7 +596,6 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 
   if (id) {
-    // Update existing
     const reseller = db.data.users.find(u => u.id === id);
     if (!reseller) return res.status(404).json({ message: "Revendedor não encontrado." });
 
@@ -631,7 +608,6 @@ app.post("/api/admin/resellers", (req, res) => {
     db.save();
     return res.json(reseller);
   } else {
-    // Check duplicate email
     if (db.data.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
@@ -651,7 +627,6 @@ app.post("/api/admin/resellers", (req, res) => {
 
     db.data.users.push(newReseller);
 
-    // Create default layout for new reseller
     db.data.layouts.push({
       id: "lay_" + newReseller.id,
       resellerId: newReseller.id,
@@ -672,7 +647,6 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 });
 
-// Master: Delete Reseller
 app.delete("/api/admin/resellers/:id", (req, res) => {
   const { id } = req.params;
   
@@ -684,12 +658,10 @@ app.delete("/api/admin/resellers/:id", (req, res) => {
   return res.json({ message: "Revendedor e seus dados associados foram removidos com sucesso." });
 });
 
-// Master: Get OTA Version
 app.get("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
 
-// Master: Update OTA Version
 app.post("/api/admin/ota", (req, res) => {
   const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes, minSupportedVersion } = req.body;
 
@@ -712,7 +684,6 @@ app.post("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
 
-// Master: Get global stats
 app.get("/api/admin/stats", (req, res) => {
   const totalResellers = db.data.users.filter(u => u.role === "reseller").length;
   const blockedResellers = db.data.users.filter(u => u.role === "reseller" && u.status === "blocked").length;
@@ -735,7 +706,6 @@ app.get("/api/admin/stats", (req, res) => {
   });
 });
 
-// Reseller / Layout: Get layout for a reseller
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
   const layout = db.data.layouts.find(l => l.resellerId === resellerId);
@@ -747,7 +717,6 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
-// Reseller / Layout: Update layout (Background + 5 Apps)
 app.post("/api/reseller/layout", (req, res) => {
   const { resellerId, backgroundUrl, overlayOpacity, apps } = req.body;
 
@@ -782,7 +751,6 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Reseller / Clients: Get clients for a reseller (or all if master)
 app.get("/api/reseller/clients", (req, res) => {
   const resellerId = req.query.resellerId as string;
 
@@ -791,11 +759,9 @@ app.get("/api/reseller/clients", (req, res) => {
     return res.json(clients);
   }
 
-  // All clients
   return res.json(db.data.clients);
 });
 
-// Reseller / Clients: Create or update client device
 app.post("/api/reseller/clients", (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, durationDays, expirationDate, status, notes } = req.body;
 
@@ -809,7 +775,6 @@ app.post("/api/reseller/clients", (req, res) => {
   let exp: Date;
   if (durationDays) {
     if (durationDays === 9999) {
-      // Lifetime (vitalício)
       exp = new Date(Date.now() + 100 * 365 * 86400000);
     } else {
       exp = new Date(Date.now() + Number(durationDays) * 86400000);
@@ -817,11 +782,10 @@ app.post("/api/reseller/clients", (req, res) => {
   } else if (expirationDate) {
     exp = new Date(expirationDate);
   } else {
-    exp = new Date(Date.now() + 30 * 86400000); // 30 days default
+    exp = new Date(Date.now() + 30 * 86400000);
   }
 
   if (id) {
-    // Edit
     const client = db.data.clients.find(c => c.id === id);
     if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
 
@@ -835,7 +799,6 @@ app.post("/api/reseller/clients", (req, res) => {
     db.save();
     return res.json(client);
   } else {
-    // Check reseller client limit
     const reseller = db.data.users.find(u => u.id === resellerId);
     if (reseller && reseller.clientLimit) {
       const currentCount = db.data.clients.filter(c => c.resellerId === resellerId).length;
@@ -862,7 +825,6 @@ app.post("/api/reseller/clients", (req, res) => {
   }
 });
 
-// Reseller / Clients: Quick Renew (add days)
 app.post("/api/reseller/clients/renew", (req, res) => {
   const { id, days } = req.body;
 
@@ -872,7 +834,6 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   let currentExp = new Date(client.expirationDate);
   const now = new Date();
   
-  // If expired, start from today
   if (currentExp < now) {
     currentExp = now;
   }
@@ -891,7 +852,6 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   return res.json(client);
 });
 
-// Delete Client Device
 app.delete("/api/reseller/clients/:id", (req, res) => {
   const { id } = req.params;
   db.data.clients = db.data.clients.filter(c => c.id !== id);
