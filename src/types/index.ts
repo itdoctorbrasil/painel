@@ -4,6 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string; // Suporte à senha individual por conta
   role: UserRole;
   resellerToken?: string;
   clientLimit?: number;
@@ -24,6 +25,7 @@ export interface AppLayout {
   id: string;
   resellerId: string;
   backgroundUrl: string;
+  backgrounds?: string[]; // Suporte ao carrossel com múltiplos planos de fundo
   overlayOpacity: number;
   apps: AppItem[];
   updatedAt: string;
@@ -83,6 +85,7 @@ export interface LauncherConfigResponse {
   };
   background: {
     url: string;
+    images?: string[]; // Envio da lista de imagens para a TV Box
     overlayOpacity: number;
   };
   apps: AppItem[];
