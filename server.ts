@@ -46,9 +46,18 @@ const initialDb = {
       resellerId: "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
       backgrounds: [
-        "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80",
-        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80"
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner1.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner2.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner3.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner4.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner5.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner6.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner7.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner8.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner9.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner10.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner11.png",
+        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner12.png"
       ],
       overlayOpacity: 0.35,
       apps: [
