@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { User, AppLayout, AppItem } from '../../types';
 import { TvPreviewMockup } from '../common/TvPreviewMockup';
 import { BACKGROUND_PRESETS, APP_PRESETS } from '../../services/mockData';
-import { Tv, Image, AppWindow, Sparkles, Save, Check, ExternalLink, RotateCcw, Layers } from 'lucide-react';
+import { Tv, Image, AppWindow, Sparkles, Save, Check, ExternalLink, RotateCcw, Layers, Upload, Plus, Trash2 } from 'lucide-react';
 
 interface LayoutEditorProps {
   currentUser: User;
   activeResellerView?: User | null;
   layout: AppLayout | null;
-  onSaveLayout: (layout: Partial<AppLayout>) => Promise<void>;
+  onSaveLayout: (layout: Partial<AppLayout> & { backgrounds?: string[] }) => Promise<void>;
 }
 
 export const LayoutEditor: React.FC<LayoutEditorProps> = ({
@@ -21,6 +21,8 @@ export const LayoutEditor: React.FC<LayoutEditorProps> = ({
   const resellerName = activeResellerView ? activeResellerView.name : currentUser.name;
 
   const [backgroundUrl, setBackgroundUrl] = useState<string>('');
+  const [backgrounds, setBackgrounds] = useState<string[]>([]);
+  const [newUrlInput, setNewUrlInput] = useState<string>('');
   const [overlayOpacity, setOverlayOpacity] = useState<number>(0.35);
   const [apps, setApps] = useState<AppItem[]>([]);
 
@@ -31,12 +33,20 @@ export const LayoutEditor: React.FC<LayoutEditorProps> = ({
   // Sync state when layout prop updates
   useEffect(() => {
     if (layout) {
-      setBackgroundUrl(layout.backgroundUrl || BACKGROUND_PRESETS[0].url);
+      const initialBg = layout.backgroundUrl || BACKGROUND_PRESETS[0].url;
+      const initialBgList = (layout as any).backgrounds && (layout as any).backgrounds.length > 0
+        ? (layout as any).backgrounds
+        : [initialBg];
+
+      setBackgroundUrl(initialBg);
+      setBackgrounds(initialBgList);
       setOverlayOpacity(layout.overlayOpacity ?? 0.35);
       setApps(layout.apps || []);
     } else {
       // Default 5 apps
-      setBackgroundUrl(BACKGROUND_PRESETS[0].url);
+      const defaultBg = BACKGROUND_PRESETS[0].url;
+      setBackgroundUrl(defaultBg);
+      setBackgrounds([defaultBg]);
       setOverlayOpacity(0.35);
       setApps([
         { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "" },
@@ -47,6 +57,46 @@ export const LayoutEditor: React.FC<LayoutEditorProps> = ({
       ]);
     }
   }, [layout, targetResellerId]);
+
+  // Upload do computador (Base64)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("O arquivo excede o limite de 5MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Image = reader.result as string;
+        const updatedList = [...backgrounds, base64Image];
+        setBackgrounds(updatedList);
+        setBackgroundUrl(updatedList[0]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Adicionar URL de imagem
+  const handleAddUrl = () => {
+    if (newUrlInput.trim()) {
+      const updatedList = [...backgrounds, newUrlInput.trim()];
+      setBackgrounds(updatedList);
+      setBackgroundUrl(updatedList[0]);
+      setNewUrlInput('');
+    }
+  };
+
+  // Remover imagem da galeria
+  const handleRemoveImage = (indexToRemove: number) => {
+    if (backgrounds.length <= 1) {
+      alert("O carrossel do launcher precisa ter no mínimo 1 imagem de fundo.");
+      return;
+    }
+    const updatedList = backgrounds.filter((_, idx) => idx !== indexToRemove);
+    setBackgrounds(updatedList);
+    setBackgroundUrl(updatedList[0]);
+  };
 
   const handleAppChange = (index: number, field: keyof AppItem, value: any) => {
     const updated = [...apps];
@@ -77,7 +127,8 @@ export const LayoutEditor: React.FC<LayoutEditorProps> = ({
     try {
       await onSaveLayout({
         resellerId: targetResellerId,
-        backgroundUrl,
+        backgroundUrl: backgrounds[0] || backgroundUrl,
+        backgrounds: backgrounds,
         overlayOpacity,
         apps
       });
@@ -144,27 +195,79 @@ export const LayoutEditor: React.FC<LayoutEditorProps> = ({
               <span className="text-[10px] bg-slate-950 text-slate-400 px-2 py-0.5 rounded font-mono">1920x1080 HD</span>
             </div>
 
+            {/* Ações de Upload e Inserção por URL */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold py-2.5 px-3 rounded-xl cursor-pointer transition text-xs">
+                <Upload className="w-4 h-4" />
+                <span>Carregar Imagem do PC</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                />
+              </label>
+
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="Ou cole a URL (https://...)"
+                  value={newUrlInput}
+                  onChange={(e) => setNewUrlInput(e.target.value)}
+                  className="flex-1 bg-slate-950 border border-slate-800 text-white text-xs font-mono rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUrl}
+                  className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Galeria de Backgrounds Ativos no Carrossel */}
             <div>
-              <label className="block text-slate-300 font-semibold text-xs mb-1">URL da Imagem de Fundo</label>
-              <input
-                type="url"
-                required
-                placeholder="https://..."
-                value={backgroundUrl}
-                onChange={(e) => setBackgroundUrl(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 text-white text-xs font-mono rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
-              />
+              <label className="block text-slate-300 font-semibold text-xs mb-2">
+                Galeria de Backgrounds do Carrossel ({backgrounds.length})
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {backgrounds.map((bg, idx) => (
+                  <div key={idx} className="relative h-16 rounded-xl overflow-hidden border border-slate-800 group bg-slate-950">
+                    <img src={bg} alt={`Background ${idx + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        className="bg-rose-600/90 hover:bg-rose-600 text-white p-1.5 rounded-lg transition"
+                        title="Remover Imagem"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span className="absolute bottom-1 left-1 bg-black/80 text-white text-[8px] font-mono px-1.5 py-0.5 rounded">
+                      #{idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Background Presets */}
             <div>
-              <label className="block text-slate-400 text-[11px] font-semibold mb-2">Ou escolha um Fundo HD Preset:</label>
+              <label className="block text-slate-400 text-[11px] font-semibold mb-2">Ou selecione de um Fundo HD Preset:</label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {BACKGROUND_PRESETS.map((preset) => (
                   <button
                     key={preset.id}
                     type="button"
-                    onClick={() => setBackgroundUrl(preset.url)}
+                    onClick={() => {
+                      if (!backgrounds.includes(preset.url)) {
+                        setBackgrounds([...backgrounds, preset.url]);
+                      }
+                      setBackgroundUrl(preset.url);
+                    }}
                     className={`relative h-16 rounded-xl overflow-hidden border transition group ${
                       backgroundUrl === preset.url ? 'border-indigo-500 ring-2 ring-indigo-500/50 scale-105' : 'border-slate-800 hover:border-slate-600'
                     }`}
