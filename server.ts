@@ -6,7 +6,8 @@ import { createServer as createViteServer } from "vite";
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
+// Atualizado para db_v2.json para forçar um estado limpo no Render
+const DB_FILE = path.join(DATA_DIR, "db_v2.json");
 
 // Garante que o diretório de dados existe
 if (!fs.existsSync(DATA_DIR)) {
@@ -185,21 +186,39 @@ function generateRandomPassword(length = 10): string {
 // -------------------------------------------------------------
 
 function resolveLayoutAndClient(tokenInput?: string) {
-  const token = (tokenInput || "").trim();
-  let client = (db.data.clients || []).find((c: any) => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
+  const rawToken = (tokenInput || "").trim().toUpperCase();
+  const cleanToken = rawToken.replace(/[^A-Z0-9]/g, ""); // Remove caracteres especiais como ':' e '-'
+
+  // Tenta encontrar o cliente por MAC Address ou Token do Dispositivo
+  let client = (db.data.clients || []).find((c: any) => {
+    const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    
+    return (cleanToken.length > 0 && (cMac === cleanToken || cToken === cleanToken)) ||
+           (rawToken.length > 0 && (c.macAddress.toUpperCase() === rawToken || c.deviceToken.toUpperCase() === rawToken));
+  });
+
   let reseller: any;
 
   if (client) {
-    reseller = db.data.users.find((u: any) => u.id === client!.resellerId);
-  } else if (token) {
-    reseller = db.data.users.find((u: any) => u.resellerToken === token);
+    // Se o cliente for encontrado, busca o revendedor proprietário do dispositivo
+    reseller = db.data.users.find((u: any) => u.id === client.resellerId);
+  } else if (rawToken) {
+    // Se não for um cliente cadastrado, tenta buscar diretamente pelo Token da Revenda
+    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase() === rawToken);
   }
 
+  // Fallback para Master Admin apenas se não houver vínculo
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id) || db.data.layouts[0];
+  // Busca o layout correspondente ao revendedor encontrado
+  let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
+
+  if (!layout) {
+    layout = db.data.layouts[0];
+  }
 
   return { client, reseller, layout };
 }
@@ -387,7 +406,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
 // 2. ENDPOINTS ADMINISTRATIVOS DO PAINEL WEB
 // -------------------------------------------------------------
 
-// ENDPOINT DE LOGIN UNIFICADO (MASTER E REVENDEDORES)
+// ENDPOINT DE LOGIN UNIFICADO
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -398,7 +417,6 @@ app.post("/api/auth/login", (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
 
-  // Busca qualquer usuário cadastrado (Master Admin ou Revendedor)
   const user = db.data.users.find((u: any) => u.email.trim().toLowerCase() === cleanEmail);
 
   if (!user) {
@@ -407,7 +425,6 @@ app.post("/api/auth/login", (req, res) => {
 
   const userPassword = user.password ? user.password.trim() : "revenda123password";
 
-  // Permite o login com a senha salva no banco OU a senha master global de emergência
   const isPasswordValid = (cleanPassword === userPassword) || 
                           (user.role === "master" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin"));
 
