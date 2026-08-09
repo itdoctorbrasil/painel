@@ -29,7 +29,7 @@ const initialDb = {
     {
       id: "usr_rev_1",
       name: "VIP Streaming IPTV",
-      email: "revenda@iptv.com",
+      email: "revenda1@iptv.com",
       password: "revenda123password",
       role: "reseller",
       resellerToken: "REV-VIP-8822",
@@ -65,7 +65,7 @@ const initialDb = {
         { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
         { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
         { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80", deepLink: "" }
+        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png", deepLink: "" }
       ],
       updatedAt: new Date().toISOString()
     }
@@ -186,7 +186,7 @@ function generateRandomPassword(length = 10): string {
 
 function resolveLayoutAndClient(tokenInput?: string) {
   const token = (tokenInput || "").trim();
-  let client = db.data.clients.find((c: any) => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
+  let client = (db.data.clients || []).find((c: any) => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
   let reseller: any;
 
   if (client) {
@@ -387,6 +387,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
 // 2. ENDPOINTS ADMINISTRATIVOS DO PAINEL WEB
 // -------------------------------------------------------------
 
+// ENDPOINT DE LOGIN UNIFICADO (MASTER E REVENDEDORES)
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -394,19 +395,28 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(400).json({ message: "Email e senha são obrigatórios." });
   }
 
-  const user = db.data.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-  
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password.trim();
+
+  // Busca qualquer usuário cadastrado (Master Admin ou Revendedor)
+  const user = db.data.users.find((u: any) => u.email.trim().toLowerCase() === cleanEmail);
+
   if (!user) {
     return res.status(401).json({ message: "Credenciais inválidas. Usuário não encontrado." });
   }
 
-  const validPassword = user.password || "revenda123password";
-  if (password !== validPassword && password !== "admin" && password !== "2b079e541af29b37f713") {
+  const userPassword = user.password ? user.password.trim() : "revenda123password";
+
+  // Permite o login com a senha salva no banco OU a senha master global de emergência
+  const isPasswordValid = (cleanPassword === userPassword) || 
+                          (user.role === "master" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin"));
+
+  if (!isPasswordValid) {
     return res.status(401).json({ message: "Senha incorreta." });
   }
 
   if (user.status === "blocked") {
-    return res.status(403).json({ message: "Sua conta de revendedor está bloqueada." });
+    return res.status(403).json({ message: "Sua conta está bloqueada pelo Administrador." });
   }
 
   user.lastLogin = new Date().toISOString();
@@ -419,30 +429,44 @@ app.post("/api/auth/login", (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      resellerToken: user.resellerToken,
-      clientLimit: user.clientLimit,
+      resellerToken: user.resellerToken || "",
+      clientLimit: user.clientLimit || 0,
       status: user.status
     }
   });
 });
 
 app.get("/api/admin/stats", (req, res) => {
-  const resellers = db.data.users.filter((u: any) => u.role === "reseller");
-  const clients = db.data.clients || [];
-  
-  const now = new Date();
-  const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
-  const expiredClients = clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status === "expired").length;
+  try {
+    const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
+    const clients = db.data.clients || [];
+    
+    const now = new Date();
+    const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
+    const expiredClients = clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status === "expired").length;
 
-  return res.json({
-    totalResellers: resellers.length,
-    activeResellers: resellers.filter((r: any) => r.status === "active").length,
-    totalClients: clients.length,
-    activeClients,
-    expiredClients,
-    otaVersion: db.data.otaVersion?.versionName || "1.0.0",
-    totalApiRequests: db.data.apiLogs?.length || 0
-  });
+    return res.json({
+      success: true,
+      totalResellers: resellers.length,
+      activeResellers: resellers.filter((r: any) => r.status === "active").length,
+      totalClients: clients.length,
+      activeClients,
+      expiredClients,
+      otaVersion: db.data.otaVersion?.versionName || "1.0.3",
+      totalApiRequests: (db.data.apiLogs || []).length
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      totalResellers: 0,
+      activeResellers: 0,
+      totalClients: 0,
+      activeClients: 0,
+      expiredClients: 0,
+      otaVersion: "1.0.3",
+      totalApiRequests: 0
+    });
+  }
 });
 
 app.get("/api/admin/logs", (req, res) => {
@@ -475,7 +499,7 @@ app.post("/api/admin/ota", (req, res) => {
 
 // Endpoints Revendedores
 app.get("/api/admin/resellers", (req, res) => {
-  const resellers = db.data.users.filter((u: any) => u.role === "reseller");
+  const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
   
   const result = resellers.map((r: any) => {
     const clients = (db.data.clients || []).filter((c: any) => c.resellerId === r.id);
@@ -503,7 +527,7 @@ app.post("/api/admin/resellers", (req, res) => {
     if (!reseller) return res.status(404).json({ message: "Revendedor não encontrado." });
 
     reseller.name = name;
-    reseller.email = email;
+    reseller.email = email.trim().toLowerCase();
     if (password && password.trim().length > 0) reseller.password = password.trim();
     if (resellerToken) reseller.resellerToken = resellerToken;
     if (clientLimit !== undefined) reseller.clientLimit = Number(clientLimit);
@@ -512,17 +536,18 @@ app.post("/api/admin/resellers", (req, res) => {
     db.save();
     return res.json(reseller);
   } else {
-    if (db.data.users.some((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (db.data.users.some((u: any) => u.email.trim().toLowerCase() === cleanEmail)) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
 
     const generatedToken = resellerToken || `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const finalPassword = (password && password.trim().length > 0) ? password.trim() : generateRandomPassword();
+    const finalPassword = (password && password.trim().length > 0) ? password.trim() : "revenda123password";
 
     const newReseller = {
       id: "usr_rev_" + Date.now(),
       name,
-      email,
+      email: cleanEmail,
       password: finalPassword,
       role: "reseller",
       resellerToken: generatedToken,
@@ -540,11 +565,11 @@ app.post("/api/admin/resellers", (req, res) => {
       backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
       overlayOpacity: 0.35,
       apps: [
-        { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
-        { id: 2, name: "Cine VOD", packageName: "com.luna.vodmovies", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
+        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
+        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
         { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80" },
-        { id: 4, name: "Netflix", packageName: "com.netflix.mediaclient", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
-        { id: 5, name: "Configurações", packageName: "com.android.settings", iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80" }
+        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
+        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png" }
       ],
       updatedAt: new Date().toISOString()
     });
@@ -556,7 +581,7 @@ app.post("/api/admin/resellers", (req, res) => {
 
 app.delete("/api/admin/resellers/:id", (req, res) => {
   const { id } = req.params;
-  db.data.users = db.data.users.filter((u: any) => u.id !== id);
+  db.data.users = (db.data.users || []).filter((u: any) => u.id !== id);
   db.save();
   return res.json({ status: "success" });
 });
