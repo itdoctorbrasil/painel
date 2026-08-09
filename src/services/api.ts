@@ -7,7 +7,8 @@ import {
   LauncherVersionResponse 
 } from '../types';
 
-const API_BASE = '';
+// Aponta para o servidor Node.js no Render
+const API_BASE = 'https://painel-ayxi.onrender.com';
 
 export async function loginApi(email: string, password: string) {
   const res = await fetch(`${API_BASE}/api/auth/login`, {
@@ -16,7 +17,7 @@ export async function loginApi(email: string, password: string) {
     body: JSON.stringify({ email, password })
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao realizar login');
   }
   return res.json();
@@ -36,7 +37,7 @@ export async function saveResellerApi(data: Partial<User>) {
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao salvar revendedor');
   }
   return res.json();
@@ -69,7 +70,7 @@ export async function saveOtaVersionApi(data: Partial<OtaVersion>) {
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao salvar OTA');
   }
   return res.json();
@@ -89,7 +90,7 @@ export async function saveLayoutApi(layout: Partial<AppLayout>) {
     body: JSON.stringify(layout)
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao salvar layout');
   }
   return res.json();
@@ -110,7 +111,7 @@ export async function saveClientApi(clientData: any) {
     body: JSON.stringify(clientData)
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao salvar cliente');
   }
   return res.json();
@@ -123,7 +124,7 @@ export async function renewClientApi(id: string, days: number) {
     body: JSON.stringify({ id, days })
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Erro ao renovar cliente');
   }
   return res.json();
