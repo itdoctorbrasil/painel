@@ -29,7 +29,7 @@ const initialDb = {
     {
       id: "usr_rev_1",
       name: "VIP Streaming IPTV",
-      email: "revenda1@iptv.com",
+      email: "revenda@iptv.com",
       password: "revenda123password",
       role: "reseller",
       resellerToken: "REV-VIP-8822",
