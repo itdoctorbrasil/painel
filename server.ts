@@ -169,6 +169,9 @@ const disableCache = (res: express.Response) => {
   res.setHeader("Expires", "0");
 };
 
+/**
+ * Função centralizadora de identificação de dispositivo e checagem de expiração
+ */
 function resolveLayoutAndClient(tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
@@ -182,9 +185,22 @@ function resolveLayoutAndClient(tokenInput?: string) {
   });
 
   let reseller: any;
+  let isExpired = false;
 
   if (client) {
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
+
+    // Validação estrita de expiração: Status manual "expired" OU data de validade ultrapassada
+    const now = new Date();
+    const expDate = new Date(client.expirationDate);
+
+    if (client.status === "expired" || expDate < now) {
+      isExpired = true;
+      if (client.status !== "expired") {
+        client.status = "expired";
+        db.save();
+      }
+    }
   }
 
   if (!reseller && rawToken) {
@@ -217,7 +233,7 @@ function resolveLayoutAndClient(tokenInput?: string) {
     db.save();
   }
 
-  return { client, reseller, layout };
+  return { client, reseller, layout, isExpired };
 }
 
 // -------------------------------------------------------------
@@ -226,8 +242,6 @@ function resolveLayoutAndClient(tokenInput?: string) {
 app.get("/api/v1/apk/download", (req, res) => {
   try {
     const token = (req.query.token as string) || "DEFAULT_TOKEN";
-    
-    // Procura o arquivo base.apk na pasta public
     const baseApkPath = path.join(process.cwd(), "public", "base.apk");
 
     if (!fs.existsSync(baseApkPath)) {
@@ -237,7 +251,6 @@ app.get("/api/v1/apk/download", (req, res) => {
       });
     }
 
-    // Leitura e modificacao do APK usando adm-zip
     const zip = new AdmZip(baseApkPath);
     const configContent = JSON.stringify({ resellerToken: token }, null, 2);
     
@@ -261,7 +274,18 @@ app.get("/api/v1/apk/download", (req, res) => {
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
-  const { layout } = resolveLayoutAndClient(token);
+  const { layout, isExpired } = resolveLayoutAndClient(token);
+
+  if (isExpired) {
+    recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "expired", 200);
+    return res.json({
+      status: "expired",
+      isExpired: true,
+      message: "Seu login expirou. Entre em contato com seu revendedor.",
+      total: 0,
+      apps: [] // RETORNA VAZIO PARA QUE O LAUNCHER NÃO EXIBA NEM ABRA NENHUM APP
+    });
+  }
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
@@ -299,7 +323,19 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 const handleImgJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
-  const { layout } = resolveLayoutAndClient(token);
+  const { layout, isExpired } = resolveLayoutAndClient(token);
+
+  if (isExpired) {
+    recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "expired", 200);
+    return res.json({
+      status: "expired",
+      isExpired: true,
+      backgroundUrl: "expiration", // Chave para carregar res/drawable/expiration.png
+      overlayOpacity: 0.0,
+      images: ["expiration"],
+      banners: [{ id: "banner_expired", imageUrl: "expiration" }]
+    });
+  }
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
@@ -375,7 +411,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
     });
   }
 
-  const { client, reseller, layout } = resolveLayoutAndClient(token);
+  const { client, reseller, layout, isExpired } = resolveLayoutAndClient(token);
 
   if (!reseller) {
     recordApiLog(token, "/api/v1/launcher/config", req, "error", 404);
@@ -390,6 +426,35 @@ app.get("/api/v1/launcher/config", (req, res) => {
     return res.status(403).json({
       status: "error",
       message: "Esta conta de revenda está bloqueada pelo Administrador Supremo."
+    });
+  }
+
+  // TRATAMENTO DE DISPOSITIVO EXPIRADO
+  if (isExpired) {
+    recordApiLog(token, "/api/v1/launcher/config", req, "expired", 200);
+    return res.json({
+      status: "expired",
+      isExpired: true,
+      message: "Seu login expirou. Entre em contato com seu revendedor.",
+      reseller: {
+        name: reseller.name,
+        token: reseller.resellerToken || ""
+      },
+      client: client ? {
+        id: client.id,
+        name: client.clientName,
+        macAddress: client.macAddress,
+        deviceToken: client.deviceToken,
+        expirationDate: client.expirationDate,
+        isActive: false,
+        daysRemaining: 0
+      } : undefined,
+      background: {
+        url: "expiration",
+        images: ["expiration"],
+        overlayOpacity: 0.0
+      },
+      apps: [] // COMPLETA ISOLAÇÃO: NENHUM APP É ENTREGUE
     });
   }
 
@@ -414,11 +479,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
       daysRemaining: daysRemaining > 0 ? daysRemaining : 0
     };
 
-    if (!isActive) {
-      recordApiLog(token, "/api/v1/launcher/config", req, "expired", 200);
-    } else {
-      recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
-    }
+    recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
   } else {
     recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
   }
@@ -429,6 +490,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
 
   const responsePayload = {
     status: "success",
+    isExpired: false,
     reseller: {
       name: reseller.name,
       token: reseller.resellerToken || ""
