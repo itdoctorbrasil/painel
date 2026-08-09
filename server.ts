@@ -163,7 +163,7 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função de resolução de layout e dispositivo com limpeza estrita de formatação (hífen, dois pontos, maiúsculas)
+ * Função de resolução de layout e dispositivo com limpeza estrita de formatação
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -189,7 +189,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let isExpired = false;
 
   if (client) {
-    // Associa o cliente exatamente ao revendedor dele (ex: Marcelo)
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
     const now = new Date();
@@ -204,19 +203,15 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token
+  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token REV-
   if (!reseller && cleanToken.length > 0) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
-  }
-  if (!reseller && cleanMac.length > 0) {
-    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanMac);
   }
 
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Busca o layout customizado daquele revendedor específico
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
   if (!layout) {
@@ -800,7 +795,6 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
-// SALVAMENTO DE LAYOUT CORRIGIDO: Permite remoção real de imagens sem re-injetar defaults
 app.post("/api/reseller/layout", (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
 
@@ -821,7 +815,7 @@ app.post("/api/reseller/layout", (req, res) => {
   
   if (layout) {
     layout.backgroundUrl = imageList[0];
-    layout.backgrounds = imageList; // Aceita a lista limpa vinda do painel
+    layout.backgrounds = imageList;
     layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
     layout.apps = apps;
     layout.updatedAt = new Date().toISOString();
