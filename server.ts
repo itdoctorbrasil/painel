@@ -196,6 +196,7 @@ function resolveLayoutAndClient(tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
+  // 1. Tenta encontrar o cliente por MAC Address ou Token do Dispositivo
   let client = (db.data.clients || []).find((c: any) => {
     const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -207,19 +208,42 @@ function resolveLayoutAndClient(tokenInput?: string) {
   let reseller: any;
 
   if (client) {
+    // Busca o revendedor proprietário do dispositivo encontrado
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
-  } else if (rawToken) {
+  }
+
+  if (!reseller && rawToken) {
+    // Tenta encontrar diretamente pelo Token da Revenda (ex: REV-JYWMOC)
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase() === rawToken);
   }
 
+  // Fallback para Master Admin apenas se não houver NENHUM vínculo
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
+  // Tenta buscar o layout específico do revendedor
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
+  // Se o revendedor não possuir layout na tabela, cria um layout automaticamente
   if (!layout) {
-    layout = db.data.layouts[0];
+    layout = {
+      id: "lay_" + reseller.id,
+      resellerId: reseller.id,
+      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
+      overlayOpacity: 0.35,
+      apps: [
+        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
+        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
+        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80" },
+        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
+        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png" }
+      ],
+      updatedAt: new Date().toISOString()
+    };
+    db.data.layouts.push(layout);
+    db.save();
   }
 
   return { client, reseller, layout };
