@@ -88,7 +88,7 @@ const initialDb = {
     versionName: "1.0.3",
     downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
     forceUpdate: false,
-    releaseNotes: "• Novo motor de inicialização rápida\n• Melhorias na navegação com Controle Remoto D-Pad\n• Suporte a ícones em 4K Ultra HD\n• Correções de estabilidade no Android 12+",
+    releaseNotes: "• Melhorias na navegação \n• Correções de estabilidade",
     minSupportedVersion: 100,
     fileSizeBytes: 18450000,
     updatedAt: new Date().toISOString()
