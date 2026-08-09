@@ -17,13 +17,14 @@ import {
 interface GlobalStatsProps {
   stats: {
     totalResellers: number;
-    blockedResellers: number;
+    blockedResellers?: number;
+    activeResellers?: number;
     totalClients: number;
     activeClients: number;
     expiredClients: number;
-    totalLogs: number;
-    logs: ApiLog[];
-    otaVersion: OtaVersion;
+    totalLogs?: number;
+    logs?: ApiLog[];
+    otaVersion?: OtaVersion | string;
   } | null;
   resellers: User[];
   onNavigateToTab: (tab: string) => void;
@@ -31,7 +32,7 @@ interface GlobalStatsProps {
 
 export const GlobalStats: React.FC<GlobalStatsProps> = ({
   stats,
-  resellers,
+  resellers = [],
   onNavigateToTab
 }) => {
   if (!stats) {
@@ -42,6 +43,17 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
       </div>
     );
   }
+
+  // Cálculos seguros com fallbacks para evitar erros de renderização ou NaN
+  const totalResellers = stats.totalResellers || 0;
+  const activeResellers = stats.activeResellers ?? (totalResellers - (stats.blockedResellers || 0));
+  const blockedResellers = stats.blockedResellers ?? (totalResellers - activeResellers);
+  
+  const totalClients = stats.totalClients || 0;
+  const activeClients = stats.activeClients || 0;
+  const expiredClients = stats.expiredClients || 0;
+  
+  const logsList = stats.logs || [];
 
   return (
     <div className="space-y-6">
@@ -90,11 +102,11 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.totalResellers}</div>
+          <div className="text-3xl font-black text-white">{totalResellers}</div>
           <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-            <span className="text-emerald-400 font-bold">{stats.totalResellers - stats.blockedResellers} Ativos</span>
+            <span className="text-emerald-400 font-bold">{activeResellers} Ativos</span>
             <span>•</span>
-            <span className="text-rose-400 font-bold">{stats.blockedResellers} Bloqueados</span>
+            <span className="text-rose-400 font-bold">{blockedResellers} Bloqueados</span>
           </p>
         </div>
 
@@ -106,7 +118,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
               <Tv className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.totalClients}</div>
+          <div className="text-3xl font-black text-white">{totalClients}</div>
           <p className="text-xs text-slate-400 mt-1">Dispositivos/TV Boxes cadastrados</p>
         </div>
 
@@ -118,9 +130,9 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-emerald-400">{stats.activeClients}</div>
+          <div className="text-3xl font-black text-emerald-400">{activeClients}</div>
           <p className="text-xs text-slate-400 mt-1">
-            {stats.totalClients > 0 ? `${Math.round((stats.activeClients / stats.totalClients) * 100)}% de retenção` : 'Sem registros'}
+            {totalClients > 0 ? `${Math.round((activeClients / totalClients) * 100)}% de retenção` : 'Sem registros'}
           </p>
         </div>
 
@@ -132,7 +144,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
               <UserX className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-rose-400">{stats.expiredClients}</div>
+          <div className="text-3xl font-black text-rose-400">{expiredClients}</div>
           <p className="text-xs text-slate-400 mt-1">Exigem renovação de plano</p>
         </div>
       </div>
@@ -167,34 +179,42 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {resellers.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-800/40 transition">
-                    <td className="p-3 font-semibold text-white">
-                      {r.name}
-                      <div className="text-[11px] text-slate-400 font-normal">{r.email}</div>
-                    </td>
-                    <td className="p-3 font-mono text-indigo-300">{r.resellerToken}</td>
-                    <td className="p-3 font-medium">
-                      <span className="text-emerald-400 font-bold">{r.activeClients || 0}</span>
-                      <span className="text-slate-500"> / {r.clientLimit || 50} limit</span>
-                    </td>
-                    <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        r.status === 'active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}>
-                        {r.status === 'active' ? 'Ativo' : 'Bloqueado'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
-                      <button
-                        onClick={() => onNavigateToTab('layout_editor')}
-                        className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-indigo-500/30"
-                      >
-                        Ver Layout
-                      </button>
+                {resellers.length > 0 ? (
+                  resellers.map((r) => (
+                    <tr key={r.id} className="hover:bg-slate-800/40 transition">
+                      <td className="p-3 font-semibold text-white">
+                        {r.name}
+                        <div className="text-[11px] text-slate-400 font-normal">{r.email}</div>
+                      </td>
+                      <td className="p-3 font-mono text-indigo-300">{r.resellerToken || '-'}</td>
+                      <td className="p-3 font-medium">
+                        <span className="text-emerald-400 font-bold">{(r as any).activeClients || 0}</span>
+                        <span className="text-slate-500"> / {r.clientLimit || 50} limit</span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          r.status === 'active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {r.status === 'active' ? 'Ativo' : 'Bloqueado'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => onNavigateToTab('layout_editor')}
+                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-indigo-500/30"
+                        >
+                          Ver Layout
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center text-slate-500">
+                      Nenhum revendedor cadastrado.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -213,8 +233,8 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
           </div>
 
           <div className="space-y-2.5 overflow-y-auto max-h-[380px] pr-1 flex-1 font-mono text-xs">
-            {stats.logs && stats.logs.length > 0 ? (
-              stats.logs.map((log) => (
+            {logsList.length > 0 ? (
+              logsList.map((log) => (
                 <div key={log.id} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5 font-bold text-slate-200">
