@@ -16,7 +16,7 @@ const initialDb = {
   users: [
     {
       id: "usr_master",
-      name: "Master Admin (Sistema)",
+      name: "Acesso Master",
       email: "admin@painel.com",
       password: "2b079e541af29b37f713",
       role: "master",
@@ -679,7 +679,12 @@ app.post("/api/admin/resellers", (req, res) => {
       id: "lay_" + newReseller.id,
       resellerId: newReseller.id,
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
