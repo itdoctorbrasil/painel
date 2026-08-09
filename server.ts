@@ -169,7 +169,7 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função centralizadora de identificação de dispositivo e checagem de expiração
+ * Função centralizadora com higienização estrita de caracteres para busca de clientes
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -178,16 +178,17 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. TENTA ENCONTRAR O CLIENTE PRIMEIRO (Prioridade Total para Dispositivos)
+  // 1. BUSCA O CLIENTE HIGIENIZANDO TODOS OS CARACTERES (Maiúsculas / Minúsculas / Símbolos)
   let client = (db.data.clients || []).find((c: any) => {
-    const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-    const matchMac = cleanMac.length > 0 && cMac === cleanMac;
-    const matchToken = cleanToken.length > 0 && (cToken === cleanToken || cMac === cleanToken);
-    const matchRawToken = rawToken.length > 0 && (c.macAddress.toUpperCase() === rawToken || c.deviceToken.toUpperCase() === rawToken);
+    const matchMac = cleanMac.length > 0 && cMacClean === cleanMac;
+    const matchToken = cleanToken.length > 0 && cTokenClean === cleanToken;
+    const matchCrossMac = cleanToken.length > 0 && cMacClean === cleanToken;
+    const matchCrossToken = cleanMac.length > 0 && cTokenClean === cleanMac;
 
-    return matchMac || matchToken || matchRawToken;
+    return matchMac || matchToken || matchCrossMac || matchCrossToken;
   });
 
   let reseller: any;
@@ -196,7 +197,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   if (client) {
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
-    // Validação estrita de expiração: Status manual "expired" OU data ultrapassada
+    // Validação estrita de expiração: Status manual "expired" OU data de validade ultrapassada
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
@@ -209,7 +210,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // 2. SE NÃO ENCONTROU O CLIENTE, BUSCA O REVENDEDOR DEDICADO
+  // 2. BUSCA O REVENDEDOR DEDICADO CASO NÃO SEJA UM DISPOSITIVO CADASTRADO
   if (!reseller && cleanToken.length > 0) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
@@ -224,38 +225,19 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
   if (!layout) {
-    layout = {
-      id: "lay_" + reseller.id,
-      resellerId: reseller.id,
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
-      overlayOpacity: 0.35,
-      apps: [
-        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
-        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80" },
-        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png" }
-      ],
-      updatedAt: new Date().toISOString()
-    };
-    db.data.layouts.push(layout);
-    db.save();
+    layout = db.data.layouts[0];
   }
 
   return { client, reseller, layout, isExpired };
 }
 
-// Helper para extrair parâmetros do Request
 function extractDeviceCredentials(req: express.Request) {
   const mac = (req.query.mac as string || req.headers["x-mac-address"] as string || "").trim();
   const token = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   return { mac, token };
 }
 
-// -------------------------------------------------------------
 // ROTA DE GERADOR / DOWNLOAD DE APK CUSTOMIZADO
-// -------------------------------------------------------------
 app.get("/api/v1/apk/download", (req, res) => {
   try {
     const token = (req.query.token as string) || "DEFAULT_TOKEN";
@@ -732,7 +714,6 @@ app.get("/api/reseller/clients", (req, res) => {
   return res.json(clients);
 });
 
-// CADASTRO E EDIÇÃO DE CLIENTES COM GERAÇÃO GARANTIDA DE TOKEN
 app.post("/api/reseller/clients", (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, days, status, notes } = req.body;
 
@@ -745,7 +726,6 @@ app.post("/api/reseller/clients", (req, res) => {
 
   if (!db.data.clients) db.data.clients = [];
 
-  // GERAÇÃO AUTOMÁTICA DE TOKEN CASO O CAMPO TENHA FICADO VAZIO
   if (!cleanToken) {
     cleanToken = cleanMac 
       ? `DEV-${cleanMac.replace(/[^A-Z0-9]/g, "")}` 
@@ -866,7 +846,6 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Inicializador de Servidor com Suporte a Produção vs Desenvolvimento
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
