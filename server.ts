@@ -46,19 +46,20 @@ const initialDb = {
       resellerId: "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
       backgrounds: [
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner1.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner2.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner3.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner4.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner5.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner6.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner7.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner8.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner9.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner10.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner11.png",
-        "https://itdoctorbrasil.site/Launchers/Creative/Banners/banner12.png"
-      ],
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
+        ],
+      
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
