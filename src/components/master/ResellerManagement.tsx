@@ -12,7 +12,7 @@ import {
   Eye, 
   RotateCw, 
   Search,
-  Tv
+  Lock
 } from 'lucide-react';
 
 interface ResellerManagementProps {
@@ -34,11 +34,12 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
+  // Form states com o campo password incluído
   const [formData, setFormData] = useState({
     id: '',
     name: '',
     email: '',
+    password: '',
     resellerToken: '',
     clientLimit: 50,
     status: 'active' as 'active' | 'blocked'
@@ -49,6 +50,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
       id: '',
       name: '',
       email: '',
+      password: '',
       resellerToken: `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       clientLimit: 50,
       status: 'active'
@@ -63,6 +65,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
       id: r.id,
       name: r.name,
       email: r.email,
+      password: '', // Em branco por padrão na edição para não sobrescrever a menos que altere
       resellerToken: r.resellerToken || '',
       clientLimit: r.clientLimit || 50,
       status: r.status
@@ -251,6 +254,21 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                   placeholder="revenda@iptv.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Campo de Senha adicionado ao Modal */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-indigo-400" /> Senha de Acesso
+                </label>
+                <input
+                  type="password"
+                  required={!editingReseller} // Obrigatório apenas no cadastro
+                  placeholder={editingReseller ? "Deixe em branco para manter a senha atual" : "Digite a senha de acesso"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
                 />
               </div>
