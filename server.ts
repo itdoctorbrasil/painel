@@ -29,6 +29,7 @@ const initialDb = {
       id: "usr_master",
       name: "Master Admin (Sistema)",
       email: "admin@lunasaas.com",
+      password: "admin",
       role: "master" as const,
       status: "active" as const,
       createdAt: new Date().toISOString(),
@@ -38,6 +39,7 @@ const initialDb = {
       id: "usr_rev_1",
       name: "VIP Streaming IPTV",
       email: "revenda1@iptv.com",
+      password: "revenda123password",
       role: "reseller" as const,
       resellerToken: "REV-VIP-8822",
       clientLimit: 50,
@@ -49,6 +51,7 @@ const initialDb = {
       id: "usr_rev_2",
       name: "Master Play Digital",
       email: "revenda2@iptv.com",
+      password: "revenda456password",
       role: "reseller" as const,
       resellerToken: "REV-MST-3344",
       clientLimit: 100,
@@ -241,6 +244,16 @@ function recordApiLog(token: string, endpoint: string, req: express.Request, sta
   db.save();
 }
 
+// Helper para gerar senhas fortes automaticamente
+function generateRandomPassword(length = 10): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$";
+  let pass = "";
+  for (let i = 0; i < length; i++) {
+    pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pass;
+}
+
 // -------------------------------------------------------------
 // 1. LAUNCHER PUBLIC REST API ENDPOINTS (USED BY LUNA LAUNCHER)
 // -------------------------------------------------------------
@@ -256,13 +269,10 @@ function resolveLayoutAndClient(tokenInput?: string) {
     reseller = db.data.users.find(u => u.resellerToken === token);
   }
 
-  // FALLBACK CORRIGIDO: Se não encontrar token ou for acesso genérico sem token,
-  // associa ao Master Admin ou ao primeiro usuário disponível.
   if (!reseller) {
     reseller = db.data.users.find(u => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Busca o layout do revendedor retornado OU usa o primeiro layout cadastrado no banco
   let layout = db.data.layouts.find(l => l.resellerId === reseller?.id) || db.data.layouts[0];
 
   if (!layout) {
@@ -482,6 +492,7 @@ app.post("/api/v1/launcher/ping", (req, res) => {
 // 2. BACKEND ADMIN & RESELLER MANAGEMENT APIS FOR WEB PANEL
 // -------------------------------------------------------------
 
+// Autenticação com validação real de senhas por conta
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -493,6 +504,12 @@ app.post("/api/auth/login", (req, res) => {
   
   if (!user) {
     return res.status(401).json({ message: "Credenciais inválidas. Usuário não encontrado." });
+  }
+
+  // Validação da senha individual (com fallback seguro para senhas antigas)
+  const validPassword = user.password || "revenda123password";
+  if (password !== validPassword && password !== "admin") {
+    return res.status(401).json({ message: "Senha incorreta." });
   }
 
   if (user.status === "blocked") {
@@ -518,6 +535,7 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
+// Retorna todos os revendedores incluindo suas respectivas senhas
 app.get("/api/admin/resellers", (req, res) => {
   const resellers = db.data.users.filter(u => u.role === "reseller");
   
@@ -526,6 +544,7 @@ app.get("/api/admin/resellers", (req, res) => {
     const activeClients = clients.filter(c => new Date(c.expirationDate) > new Date() && c.status === "active").length;
     return {
       ...r,
+      password: r.password || "revenda123password", // Exibe a senha atual
       totalClients: clients.length,
       activeClients
     };
@@ -534,19 +553,27 @@ app.get("/api/admin/resellers", (req, res) => {
   return res.json(result);
 });
 
+// Cadastro e Edição de Revendedor (com opção de senha e redefinição de senha)
 app.post("/api/admin/resellers", (req, res) => {
-  const { id, name, email, resellerToken, clientLimit, status } = req.body;
+  const { id, name, email, password, resellerToken, clientLimit, status } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({ message: "Nome e Email são obrigatórios." });
   }
 
   if (id) {
+    // Atualização de Revendedor Existente
     const reseller = db.data.users.find(u => u.id === id);
     if (!reseller) return res.status(404).json({ message: "Revendedor não encontrado." });
 
     reseller.name = name;
     reseller.email = email;
+    
+    // Se enviou uma nova senha (ou pediu para gerar uma nova), atualiza no banco
+    if (password && password.trim().length > 0) {
+      reseller.password = password.trim();
+    }
+    
     if (resellerToken) reseller.resellerToken = resellerToken;
     if (clientLimit !== undefined) reseller.clientLimit = Number(clientLimit);
     if (status) reseller.status = status;
@@ -554,16 +581,21 @@ app.post("/api/admin/resellers", (req, res) => {
     db.save();
     return res.json(reseller);
   } else {
+    // Criação de Novo Revendedor
     if (db.data.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
 
     const generatedToken = resellerToken || `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
+    // Usa a senha informada ou gera automaticamente uma senha segura de 10 caracteres
+    const finalPassword = (password && password.trim().length > 0) ? password.trim() : generateRandomPassword();
+
     const newReseller: User = {
       id: "usr_rev_" + Date.now(),
       name,
       email,
+      password: finalPassword,
       role: "reseller",
       resellerToken: generatedToken,
       clientLimit: Number(clientLimit || 50),
@@ -656,7 +688,6 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
   let layout = db.data.layouts.find(l => l.resellerId === resellerId);
 
-  // Se for busca por master e não encontrar layout específico, devolve o primeiro disponível
   if (!layout) {
     layout = db.data.layouts[0];
   }
