@@ -48,13 +48,7 @@ const initialDb = {
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
       ],
       overlayOpacity: 0.35,
       apps: [
@@ -169,7 +163,7 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função centralizadora com higienização estrita de caracteres para busca de clientes
+ * Função de resolução de layout e dispositivo com limpeza estrita de formatação (hífen, dois pontos, maiúsculas)
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -178,7 +172,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. BUSCA O CLIENTE HIGIENIZANDO TODOS OS CARACTERES (Maiúsculas / Minúsculas / Símbolos)
+  // 1. Busca o cliente higienizando todos os caracteres do banco
   let client = (db.data.clients || []).find((c: any) => {
     const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -195,9 +189,9 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let isExpired = false;
 
   if (client) {
+    // Associa o cliente exatamente ao revendedor dele (ex: Marcelo)
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
-    // Validação estrita de expiração: Status manual "expired" OU data de validade ultrapassada
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
@@ -210,7 +204,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // 2. BUSCA O REVENDEDOR DEDICADO CASO NÃO SEJA UM DISPOSITIVO CADASTRADO
+  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token
   if (!reseller && cleanToken.length > 0) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
@@ -222,6 +216,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
+  // Busca o layout customizado daquele revendedor específico
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
   if (!layout) {
@@ -679,12 +674,7 @@ app.post("/api/admin/resellers", (req, res) => {
       id: "lay_" + newReseller.id,
       resellerId: newReseller.id,
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
@@ -810,6 +800,7 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
+// SALVAMENTO DE LAYOUT CORRIGIDO: Permite remoção real de imagens sem re-injetar defaults
 app.post("/api/reseller/layout", (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
 
@@ -820,7 +811,7 @@ app.post("/api/reseller/layout", (req, res) => {
   let imageList: string[] = [];
   if (Array.isArray(backgrounds) && backgrounds.length > 0) {
     imageList = backgrounds;
-  } else if (backgroundUrl) {
+  } else if (backgroundUrl && backgroundUrl.trim().length > 0) {
     imageList = [backgroundUrl];
   } else {
     imageList = ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"];
@@ -830,7 +821,7 @@ app.post("/api/reseller/layout", (req, res) => {
   
   if (layout) {
     layout.backgroundUrl = imageList[0];
-    layout.backgrounds = imageList;
+    layout.backgrounds = imageList; // Aceita a lista limpa vinda do painel
     layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
     layout.apps = apps;
     layout.updatedAt = new Date().toISOString();
