@@ -3,7 +3,6 @@ import path from "path";
 import fs from "fs";
 import cors from "cors";
 import AdmZip from "adm-zip";
-import { createServer as createViteServer } from "vite";
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -283,7 +282,7 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
       isExpired: true,
       message: "Seu login expirou. Entre em contato com seu revendedor.",
       total: 0,
-      apps: [] // RETORNA VAZIO PARA QUE O LAUNCHER NÃO EXIBA NEM ABRA NENHUM APP
+      apps: [] // RETORNA VAZIO PARA IMPEDIR A EXIBIÇÃO DE QUALQUER APLICATIVO
     });
   }
 
@@ -429,7 +428,6 @@ app.get("/api/v1/launcher/config", (req, res) => {
     });
   }
 
-  // TRATAMENTO DE DISPOSITIVO EXPIRADO
   if (isExpired) {
     recordApiLog(token, "/api/v1/launcher/config", req, "expired", 200);
     return res.json({
@@ -454,7 +452,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
         images: ["expiration"],
         overlayOpacity: 0.0
       },
-      apps: [] // COMPLETA ISOLAÇÃO: NENHUM APP É ENTREGUE
+      apps: []
     });
   }
 
@@ -841,14 +839,18 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
+// Inicializador de Servidor com Suporte a Produção vs Desenvolvimento
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    // Importação dinâmica do Vite apenas no modo dev
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    // Servidor de arquivos estáticos compilados para o Render
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
