@@ -163,7 +163,7 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função de resolução de layout e dispositivo com limpeza estrita de formatação
+ * Função de resolução de layout e dispositivo com higienização total de caracteres
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -172,7 +172,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Busca o cliente higienizando todos os caracteres do banco
+  // 1. Localiza o cliente higienizando caracteres (Maiúsculas, minúsculas, hífens e dois-pontos)
   let client = (db.data.clients || []).find((c: any) => {
     const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -203,8 +203,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token REV-
-  if (!reseller && cleanToken.length > 0) {
+  // 2. Busca a revenda apenas se for fornecido um token explicitamente de revendedor (ex: REV-)
+  if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
 
