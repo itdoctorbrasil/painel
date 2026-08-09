@@ -169,9 +169,9 @@ const initialDb = {
 
   otaVersion: {
     id: "ota_v210",
-    versionCode: 104,
-    versionName: "2.1.0",
-    downloadUrl: "https://lunalauncher.app/downloads/luna-launcher-v2.1.0.apk",
+    versionCode: 3,
+    versionName: "1.0.3",
+    downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/update.apk",
     forceUpdate: false,
     releaseNotes: "• Novo motor de inicialização rápida\n• Melhorias na navegação com Controle Remoto D-Pad\n• Suporte a ícones em 4K Ultra HD\n• Correções de estabilidade no Android 12+",
     minSupportedVersion: 100,
