@@ -28,8 +28,8 @@ const initialDb = {
     {
       id: "usr_master",
       name: "Master Admin (Sistema)",
-      email: "admin@lunasaas.com",
-      password: "admin",
+      email: "admin@painel.com",
+      password: "2b079e541af29b37f713",
       role: "master" as const,
       status: "active" as const,
       createdAt: new Date().toISOString(),
