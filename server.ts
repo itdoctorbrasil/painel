@@ -181,15 +181,21 @@ function generateRandomPassword(length = 10): string {
   return pass;
 }
 
+// Força os clientes HTTP (OkHttp/Glide/Coil) a nunca usarem cache desatualizado
+const disableCache = (res: express.Response) => {
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+};
+
 // -------------------------------------------------------------
 // 1. ENDPOINTS DA API PÚBLICA PARA O LUNA LAUNCHER (ANDROID TV)
 // -------------------------------------------------------------
 
 function resolveLayoutAndClient(tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
-  const cleanToken = rawToken.replace(/[^A-Z0-9]/g, ""); // Remove caracteres especiais como ':' e '-'
+  const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // Tenta encontrar o cliente por MAC Address ou Token do Dispositivo
   let client = (db.data.clients || []).find((c: any) => {
     const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -201,19 +207,15 @@ function resolveLayoutAndClient(tokenInput?: string) {
   let reseller: any;
 
   if (client) {
-    // Se o cliente for encontrado, busca o revendedor proprietário do dispositivo
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
   } else if (rawToken) {
-    // Se não for um cliente cadastrado, tenta buscar diretamente pelo Token da Revenda
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase() === rawToken);
   }
 
-  // Fallback para Master Admin apenas se não houver vínculo
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Busca o layout correspondente ao revendedor encontrado
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
   if (!layout) {
@@ -224,22 +226,28 @@ function resolveLayoutAndClient(tokenInput?: string) {
 }
 
 const handleAppsJson = (req: express.Request, res: express.Response) => {
+  disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
-  const formattedApps = layout.apps.map((app: any) => ({
-    id: app.id,
+  const formattedApps = layout.apps.map((app: any, index: number) => ({
+    id: app.id || `app_${index + 1}`,
+    order: index,
+    position: index,
     name: app.name,
     app_name: app.name,
     title: app.name,
     packageName: app.packageName,
     package_name: app.packageName,
     package: app.packageName,
-    iconUrl: app.iconUrl,
-    icon_url: app.iconUrl,
-    icon: app.iconUrl,
+    iconUrl: app.iconUrl || "",
+    icon_url: app.iconUrl || "",
+    icon: app.iconUrl || "",
+    bannerUrl: app.iconUrl || "",
+    banner_url: app.iconUrl || "",
+    banner: app.iconUrl || "",
     deepLink: app.deepLink || "",
     url: app.deepLink || "",
     action: app.packageName
@@ -256,6 +264,7 @@ app.get("/apps.json", handleAppsJson);
 app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
 const handleImgJson = (req: express.Request, res: express.Response) => {
+  disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
 
@@ -278,7 +287,7 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
     opacity: layout.overlayOpacity,
     images: imageList,
     banners: imageList.map((url: string, index: number) => ({
-      id: `banner_${index}`,
+      id: `banner_${index}_${Date.now()}`,
       imageUrl: url,
       image_url: url,
       url: url
@@ -290,6 +299,7 @@ app.get("/img.json", handleImgJson);
 app.get("/api/v1/launcher/img.json", handleImgJson);
 
 const handleVersionJson = (req: express.Request, res: express.Response) => {
+  disableCache(res);
   recordApiLog("OTA_CLIENT", req.path, req, "success", 200);
 
   const ota = db.data.otaVersion;
@@ -321,6 +331,7 @@ app.get("/api/v1/launcher/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version", handleVersionJson);
 
 app.get("/api/v1/launcher/config", (req, res) => {
+  disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
 
   if (!token) {
