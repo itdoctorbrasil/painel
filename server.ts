@@ -16,7 +16,7 @@ const initialDb = {
   users: [
     {
       id: "usr_master",
-      name: "Master Admin (Sistema)",
+      name: "Acesso Master",
       email: "admin@painel.com",
       password: "2b079e541af29b37f713",
       role: "master",
@@ -48,13 +48,7 @@ const initialDb = {
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
       ],
       overlayOpacity: 0.35,
       apps: [
@@ -169,27 +163,35 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função centralizadora de identificação de dispositivo e checagem de expiração
+ * Função de resolução de layout e dispositivo com limpeza estrita de formatação (hífen, dois pontos, maiúsculas)
  */
-function resolveLayoutAndClient(tokenInput?: string) {
+function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
+  const rawMac = (macInput || "").trim().toUpperCase();
+  const cleanMac = rawMac.replace(/[^A-Z0-9]/g, "");
+
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
+  // 1. Busca o cliente higienizando todos os caracteres do banco
   let client = (db.data.clients || []).find((c: any) => {
-    const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    
-    return (cleanToken.length > 0 && (cMac === cleanToken || cToken === cleanToken)) ||
-           (rawToken.length > 0 && (c.macAddress.toUpperCase() === rawToken || c.deviceToken.toUpperCase() === rawToken));
+    const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+    const matchMac = cleanMac.length > 0 && cMacClean === cleanMac;
+    const matchToken = cleanToken.length > 0 && cTokenClean === cleanToken;
+    const matchCrossMac = cleanToken.length > 0 && cMacClean === cleanToken;
+    const matchCrossToken = cleanMac.length > 0 && cTokenClean === cleanMac;
+
+    return matchMac || matchToken || matchCrossMac || matchCrossToken;
   });
 
   let reseller: any;
   let isExpired = false;
 
   if (client) {
+    // Associa o cliente exatamente ao revendedor dele (ex: Marcelo)
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
-    // Validação estrita de expiração: Status manual "expired" OU data de validade ultrapassada
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
@@ -202,42 +204,35 @@ function resolveLayoutAndClient(tokenInput?: string) {
     }
   }
 
-  if (!reseller && rawToken) {
-    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase() === rawToken);
+  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token
+  if (!reseller && cleanToken.length > 0) {
+    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
+  }
+  if (!reseller && cleanMac.length > 0) {
+    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanMac);
   }
 
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
+  // Busca o layout customizado daquele revendedor específico
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
   if (!layout) {
-    layout = {
-      id: "lay_" + reseller.id,
-      resellerId: reseller.id,
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
-      overlayOpacity: 0.35,
-      apps: [
-        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
-        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80" },
-        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png" }
-      ],
-      updatedAt: new Date().toISOString()
-    };
-    db.data.layouts.push(layout);
-    db.save();
+    layout = db.data.layouts[0];
   }
 
   return { client, reseller, layout, isExpired };
 }
 
-// -------------------------------------------------------------
-// ROTA DE GERADOR / DOWNLOAD DE APK CUSTOMIZADO (INJEÇÃO ZIP)
-// -------------------------------------------------------------
+function extractDeviceCredentials(req: express.Request) {
+  const mac = (req.query.mac as string || req.headers["x-mac-address"] as string || "").trim();
+  const token = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
+  return { mac, token };
+}
+
+// ROTA DE GERADOR / DOWNLOAD DE APK CUSTOMIZADO
 app.get("/api/v1/apk/download", (req, res) => {
   try {
     const token = (req.query.token as string) || "DEFAULT_TOKEN";
@@ -272,21 +267,21 @@ app.get("/api/v1/apk/download", (req, res) => {
 // -------------------------------------------------------------
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
-  const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
-  const { layout, isExpired } = resolveLayoutAndClient(token);
+  const { mac, token } = extractDeviceCredentials(req);
+  const { layout, isExpired } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
-    recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "expired", 200);
+    recordApiLog(mac || token || "ANONYMOUS", req.path, req, "expired", 200);
     return res.json({
       status: "expired",
       isExpired: true,
       message: "Seu login expirou. Entre em contato com seu revendedor.",
       total: 0,
-      apps: [] // RETORNA VAZIO PARA IMPEDIR A EXIBIÇÃO DE QUALQUER APLICATIVO
+      apps: []
     });
   }
 
-  recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
+  recordApiLog(mac || token || "ANONYMOUS", req.path, req, "success", 200);
 
   const formattedApps = layout.apps.map((app: any, index: number) => ({
     id: app.id || `app_${index + 1}`,
@@ -321,22 +316,22 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
 const handleImgJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
-  const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
-  const { layout, isExpired } = resolveLayoutAndClient(token);
+  const { mac, token } = extractDeviceCredentials(req);
+  const { layout, isExpired } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
-    recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "expired", 200);
+    recordApiLog(mac || token || "ANONYMOUS", req.path, req, "expired", 200);
     return res.json({
       status: "expired",
       isExpired: true,
-      backgroundUrl: "expiration", // Chave para carregar res/drawable/expiration.png
+      backgroundUrl: "expiration",
       overlayOpacity: 0.0,
       images: ["expiration"],
       banners: [{ id: "banner_expired", imageUrl: "expiration" }]
     });
   }
 
-  recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
+  recordApiLog(mac || token || "ANONYMOUS", req.path, req, "success", 200);
 
   const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
     ? layout.backgrounds 
@@ -400,20 +395,20 @@ app.get("/api/v1/launcher/version", handleVersionJson);
 
 app.get("/api/v1/launcher/config", (req, res) => {
   disableCache(res);
-  const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
+  const { mac, token } = extractDeviceCredentials(req);
 
-  if (!token) {
-    recordApiLog("MISSING_TOKEN", "/api/v1/launcher/config", req, "error", 400);
+  if (!mac && !token) {
+    recordApiLog("MISSING_IDENTIFIER", "/api/v1/launcher/config", req, "error", 400);
     return res.status(400).json({
       status: "error",
-      message: "Token não fornecido. Insira o Token do Dispositivo ou Token da Revenda."
+      message: "Token ou MAC não fornecido. Insira o Identificador do Dispositivo."
     });
   }
 
-  const { client, reseller, layout, isExpired } = resolveLayoutAndClient(token);
+  const { client, reseller, layout, isExpired } = resolveLayoutAndClient(mac, token);
 
   if (!reseller) {
-    recordApiLog(token, "/api/v1/launcher/config", req, "error", 404);
+    recordApiLog(mac || token, "/api/v1/launcher/config", req, "error", 404);
     return res.status(404).json({
       status: "error",
       message: "Token de dispositivo ou revenda inválido ou não cadastrado no painel."
@@ -421,7 +416,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
   }
 
   if (reseller.status === "blocked") {
-    recordApiLog(token, "/api/v1/launcher/config", req, "error", 403);
+    recordApiLog(mac || token, "/api/v1/launcher/config", req, "error", 403);
     return res.status(403).json({
       status: "error",
       message: "Esta conta de revenda está bloqueada pelo Administrador Supremo."
@@ -429,7 +424,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
   }
 
   if (isExpired) {
-    recordApiLog(token, "/api/v1/launcher/config", req, "expired", 200);
+    recordApiLog(mac || token, "/api/v1/launcher/config", req, "expired", 200);
     return res.json({
       status: "expired",
       isExpired: true,
@@ -477,9 +472,9 @@ app.get("/api/v1/launcher/config", (req, res) => {
       daysRemaining: daysRemaining > 0 ? daysRemaining : 0
     };
 
-    recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
+    recordApiLog(mac || token, "/api/v1/launcher/config", req, "success", 200);
   } else {
-    recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
+    recordApiLog(mac || token, "/api/v1/launcher/config", req, "success", 200);
   }
 
   const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
@@ -717,35 +712,42 @@ app.get("/api/reseller/clients", (req, res) => {
 app.post("/api/reseller/clients", (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, days, status, notes } = req.body;
 
-  if (!clientName || (!macAddress && !deviceToken)) {
-    return res.status(400).json({ message: "Nome do Cliente e MAC Address ou Token são obrigatórios." });
+  const cleanMac = (macAddress || "").trim().toUpperCase();
+  let cleanToken = (deviceToken || "").trim().toUpperCase();
+
+  if (!clientName || (!cleanMac && !cleanToken)) {
+    return res.status(400).json({ message: "Nome do Cliente e pelo menos o MAC Address ou Token são obrigatórios." });
   }
 
   if (!db.data.clients) db.data.clients = [];
+
+  if (!cleanToken) {
+    cleanToken = cleanMac 
+      ? `DEV-${cleanMac.replace(/[^A-Z0-9]/g, "")}` 
+      : `DEV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  }
 
   if (id) {
     const client = db.data.clients.find((c: any) => c.id === id);
     if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
 
     client.clientName = clientName;
-    if (macAddress) client.macAddress = macAddress.toUpperCase();
-    if (deviceToken) client.deviceToken = deviceToken;
+    if (cleanMac) client.macAddress = cleanMac;
+    client.deviceToken = cleanToken;
     if (status) client.status = status;
     if (notes !== undefined) client.notes = notes;
 
     db.save();
     return res.json(client);
   } else {
-    const finalMac = (macAddress || "").toUpperCase();
-    const finalToken = deviceToken || `DEV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const expDays = Number(days || 30);
 
     const newClient = {
       id: "cli_" + Date.now(),
       resellerId: resellerId || "usr_rev_1",
       clientName,
-      macAddress: finalMac,
-      deviceToken: finalToken,
+      macAddress: cleanMac || "00:00:00:00:00:00",
+      deviceToken: cleanToken,
       expirationDate: new Date(Date.now() + expDays * 86400000).toISOString(),
       status: status || "active",
       notes: notes || "",
@@ -798,6 +800,7 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
+// SALVAMENTO DE LAYOUT CORRIGIDO: Permite remoção real de imagens sem re-injetar defaults
 app.post("/api/reseller/layout", (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
 
@@ -808,7 +811,7 @@ app.post("/api/reseller/layout", (req, res) => {
   let imageList: string[] = [];
   if (Array.isArray(backgrounds) && backgrounds.length > 0) {
     imageList = backgrounds;
-  } else if (backgroundUrl) {
+  } else if (backgroundUrl && backgroundUrl.trim().length > 0) {
     imageList = [backgroundUrl];
   } else {
     imageList = ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"];
@@ -818,7 +821,7 @@ app.post("/api/reseller/layout", (req, res) => {
   
   if (layout) {
     layout.backgroundUrl = imageList[0];
-    layout.backgrounds = imageList;
+    layout.backgrounds = imageList; // Aceita a lista limpa vinda do painel
     layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
     layout.apps = apps;
     layout.updatedAt = new Date().toISOString();
@@ -839,10 +842,8 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Inicializador de Servidor com Suporte a Produção vs Desenvolvimento
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    // Importação dinâmica do Vite apenas no modo dev
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -850,7 +851,6 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Servidor de arquivos estáticos compilados para o Render
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
