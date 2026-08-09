@@ -33,7 +33,7 @@ import { LayoutEditor } from './components/reseller/LayoutEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 
-import { Shield, Key, Sparkles, LogIn, Lock, Mail, Play, Tv } from 'lucide-react';
+import { LogIn, Lock, Mail, Tv } from 'lucide-react';
 
 export default function App() {
   // Auth state
@@ -59,33 +59,26 @@ export default function App() {
   // Tester prefilled token
   const [initialTestToken, setInitialTestToken] = useState<string | undefined>(undefined);
 
-  // Auto login default Master Admin for instant user delight
-  useEffect(() => {
-    handleDefaultLogin('admin@lunasaas.com', 'admin123');
-  }, []);
-
-  const handleDefaultLogin = async (usrEmail: string, usrPass: string) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
     try {
-      const res = await loginApi(usrEmail, usrPass);
+      const res = await loginApi(email.trim(), password.trim());
       setCurrentUser(res.user);
       loadAllData(res.user);
     } catch (err: any) {
-      setLoginError(err.message || 'Erro ao entrar na conta');
+      setLoginError(err.message || 'Credenciais inválidas. Verifique seu e-mail e senha.');
     } finally {
       setLoginLoading(false);
     }
   };
 
-  const handleLoginFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleDefaultLogin(email, password);
-  };
-
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveResellerView(null);
+    setEmail('');
+    setPassword('');
   };
 
   // Centralized data loader
@@ -103,7 +96,6 @@ export default function App() {
         setOtaVersion(otaData);
         setClients(clientsData);
 
-        // Load master default layout or first reseller layout
         const targetId = activeResellerView ? activeResellerView.id : user.id;
         try {
           const lay = await getLayoutApi(targetId);
@@ -112,7 +104,6 @@ export default function App() {
           setLayout(null);
         }
       } else {
-        // Reseller login
         const [otaData, layData, clientsData] = await Promise.all([
           getOtaVersionApi(),
           getLayoutApi(user.id),
@@ -135,7 +126,6 @@ export default function App() {
         .then(lay => setLayout(lay))
         .catch(() => setLayout(null));
 
-      // Reload clients
       if (currentUser.role === 'master' && !activeResellerView) {
         getClientsApi().then(c => setClients(c));
       } else {
@@ -214,31 +204,6 @@ export default function App() {
             </p>
           </div>
 
-          {/* Quick Demo Login Preset Buttons */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 mb-6 shadow-xl text-xs space-y-3">
-            <span className="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">
-              ⚡ Acesso Rápido em 1-Clique (Modo Demonstração):
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleDefaultLogin('admin@lunasaas.com', 'admin123')}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold p-2.5 rounded-xl transition text-center shadow-md flex items-center justify-center gap-1.5"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>Master Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDefaultLogin('revenda1@iptv.com', 'revenda123')}
-                className="bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold p-2.5 rounded-xl border border-indigo-500/30 transition text-center flex items-center justify-center gap-1.5"
-              >
-                <Tv className="w-3.5 h-3.5" />
-                <span>Revendedor 1</span>
-              </button>
-            </div>
-          </div>
-
           {/* Login Form */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <h2 className="text-lg font-bold text-white mb-4">Entrar na sua Conta</h2>
@@ -249,7 +214,7 @@ export default function App() {
               </div>
             )}
 
-            <form onSubmit={handleLoginFormSubmit} className="space-y-4 text-xs sm:text-sm">
+            <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">E-mail</label>
                 <div className="relative">
@@ -259,7 +224,7 @@ export default function App() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@lunasaas.com"
+                    placeholder="seu-email@dominio.com"
                     className="w-full bg-slate-950 border border-slate-800 text-white pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500"
                   />
                 </div>
