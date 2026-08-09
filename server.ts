@@ -3,26 +3,17 @@ import path from "path";
 import fs from "fs";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
-import { 
-  User, 
-  AppLayout, 
-  ClientDevice, 
-  OtaVersion, 
-  ApiLog, 
-  LauncherConfigResponse, 
-  LauncherVersionResponse 
-} from "./src/types/index.ts";
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 
-// Ensure data directory exists
+// Garante que o diretório de dados existe
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Initial Default State
+// Estado Inicial Padrão
 const initialDb = {
   users: [
     {
@@ -30,8 +21,8 @@ const initialDb = {
       name: "Master Admin (Sistema)",
       email: "admin@painel.com",
       password: "2b079e541af29b37f713",
-      role: "master" as const,
-      status: "active" as const,
+      role: "master",
+      status: "active",
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
     },
@@ -40,14 +31,14 @@ const initialDb = {
       name: "VIP Streaming IPTV",
       email: "revenda1@iptv.com",
       password: "revenda123password",
-      role: "reseller" as const,
+      role: "reseller",
       resellerToken: "REV-VIP-8822",
       clientLimit: 50,
-      status: "active" as const,
+      status: "active",
       createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
       lastLogin: new Date().toISOString()
     }
-  ] as User[],
+  ],
 
   layouts: [
     {
@@ -69,7 +60,7 @@ const initialDb = {
       ],
       updatedAt: new Date().toISOString()
     }
-  ] as any[],
+  ],
 
   clients: [
     {
@@ -79,12 +70,12 @@ const initialDb = {
       macAddress: "AA:BB:CC:11:22:33",
       deviceToken: "DEV-AABBCC112233",
       expirationDate: new Date(Date.now() + 60 * 86400000).toISOString(),
-      status: "active" as const,
+      status: "active",
       notes: "Cliente mensal em dia",
       lastSeen: new Date().toISOString(),
       createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
     }
-  ] as ClientDevice[],
+  ],
 
   otaVersion: {
     id: "ota_v210",
@@ -96,14 +87,14 @@ const initialDb = {
     minSupportedVersion: 100,
     fileSizeBytes: 18450000,
     updatedAt: new Date().toISOString()
-  } as OtaVersion,
+  },
 
-  apiLogs: [] as ApiLog[]
+  apiLogs: []
 };
 
-// Database helper
+// Gerenciador de Banco de Dados JSON Local
 class DB {
-  data: typeof initialDb;
+  data: any;
 
   constructor() {
     if (fs.existsSync(DB_FILE)) {
@@ -111,7 +102,7 @@ class DB {
         const raw = fs.readFileSync(DB_FILE, "utf-8");
         this.data = JSON.parse(raw);
       } catch (err) {
-        console.error("Error reading db file, restoring initial database:", err);
+        console.error("Erro ao ler db.json, restaurando estado inicial:", err);
         this.data = initialDb;
         this.save();
       }
@@ -125,14 +116,14 @@ class DB {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), "utf-8");
     } catch (e) {
-      console.error("Failed to write db file:", e);
+      console.error("Falha ao salvar db.json:", e);
     }
   }
 }
 
 const db = new DB();
 
-// Express setup
+// Express Setup
 const app = express();
 
 app.use(cors({
@@ -144,9 +135,9 @@ app.use(cors({
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Helper log recorder
-function recordApiLog(token: string, endpoint: string, req: express.Request, status: 'success' | 'error' | 'expired', responseCode: number) {
-  const newLog: ApiLog = {
+// Gravação de Logs de API
+function recordApiLog(token: string, endpoint: string, req: express.Request, status: string, responseCode: number) {
+  const newLog = {
     id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
     token: token || "ANONYMOUS",
     endpoint,
@@ -156,6 +147,7 @@ function recordApiLog(token: string, endpoint: string, req: express.Request, sta
     status,
     responseCode
   };
+  if (!db.data.apiLogs) db.data.apiLogs = [];
   db.data.apiLogs.unshift(newLog);
   if (db.data.apiLogs.length > 200) {
     db.data.apiLogs = db.data.apiLogs.slice(0, 200);
@@ -173,25 +165,25 @@ function generateRandomPassword(length = 10): string {
 }
 
 // -------------------------------------------------------------
-// 1. LAUNCHER PUBLIC REST API ENDPOINTS (USED BY LUNA LAUNCHER)
+// 1. ENDPOINTS DA API PÚBLICA PARA O LUNA LAUNCHER (ANDROID TV)
 // -------------------------------------------------------------
 
 function resolveLayoutAndClient(tokenInput?: string) {
   const token = (tokenInput || "").trim();
-  let client = db.data.clients.find(c => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
-  let reseller: User | undefined;
+  let client = db.data.clients.find((c: any) => c.deviceToken === token || c.macAddress.toUpperCase() === token.toUpperCase());
+  let reseller: any;
 
   if (client) {
-    reseller = db.data.users.find(u => u.id === client!.resellerId);
+    reseller = db.data.users.find((u: any) => u.id === client!.resellerId);
   } else if (token) {
-    reseller = db.data.users.find(u => u.resellerToken === token);
+    reseller = db.data.users.find((u: any) => u.resellerToken === token);
   }
 
   if (!reseller) {
-    reseller = db.data.users.find(u => u.id === "usr_master") || db.data.users[0];
+    reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  let layout: any = db.data.layouts.find((l: any) => l.resellerId === reseller?.id) || db.data.layouts[0];
+  let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id) || db.data.layouts[0];
 
   if (!layout) {
     layout = {
@@ -246,14 +238,12 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 app.get("/apps.json", handleAppsJson);
 app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
-// ROTA DE IMAGENS DE DESTAQUE/BACKGROUND (SUPORTA CARROSSEL COM MÚLTIPLAS FOTOS)
 const handleImgJson = (req: express.Request, res: express.Response) => {
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
-  // Lista de imagens enviadas no carrossel do aplicativo
   const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
     ? layout.backgrounds 
     : [layout.backgroundUrl];
@@ -269,7 +259,7 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
     image: primaryUrl,
     overlayOpacity: layout.overlayOpacity,
     opacity: layout.overlayOpacity,
-    images: imageList, // Envia todas as imagens cadastradas no painel
+    images: imageList,
     banners: imageList.map((url: string, index: number) => ({
       id: `banner_${index}`,
       imageUrl: url,
@@ -396,7 +386,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 2. BACKEND ADMIN & RESELLER MANAGEMENT APIS FOR WEB PANEL
+// 2. ENDPOINTS ADMINISTRATIVOS DO PAINEL WEB
 // -------------------------------------------------------------
 
 app.post("/api/auth/login", (req, res) => {
@@ -406,7 +396,7 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(400).json({ message: "Email e senha são obrigatórios." });
   }
 
-  const user = db.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const user = db.data.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
   
   if (!user) {
     return res.status(401).json({ message: "Credenciais inválidas. Usuário não encontrado." });
@@ -439,11 +429,11 @@ app.post("/api/auth/login", (req, res) => {
 });
 
 app.get("/api/admin/resellers", (req, res) => {
-  const resellers = db.data.users.filter(u => u.role === "reseller");
+  const resellers = db.data.users.filter((u: any) => u.role === "reseller");
   
-  const result = resellers.map(r => {
-    const clients = db.data.clients.filter(c => c.resellerId === r.id);
-    const activeClients = clients.filter(c => new Date(c.expirationDate) > new Date() && c.status === "active").length;
+  const result = resellers.map((r: any) => {
+    const clients = db.data.clients.filter((c: any) => c.resellerId === r.id);
+    const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > new Date() && c.status === "active").length;
     return {
       ...r,
       password: r.password || "revenda123password",
@@ -463,7 +453,7 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 
   if (id) {
-    const reseller = db.data.users.find(u => u.id === id);
+    const reseller = db.data.users.find((u: any) => u.id === id);
     if (!reseller) return res.status(404).json({ message: "Revendedor não encontrado." });
 
     reseller.name = name;
@@ -476,14 +466,14 @@ app.post("/api/admin/resellers", (req, res) => {
     db.save();
     return res.json(reseller);
   } else {
-    if (db.data.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    if (db.data.users.some((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
 
     const generatedToken = resellerToken || `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const finalPassword = (password && password.trim().length > 0) ? password.trim() : generateRandomPassword();
 
-    const newReseller: User = {
+    const newReseller = {
       id: "usr_rev_" + Date.now(),
       name,
       email,
@@ -520,7 +510,7 @@ app.post("/api/admin/resellers", (req, res) => {
 
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
-  let layout: any = db.data.layouts.find((l: any) => l.resellerId === resellerId);
+  let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
 
   if (!layout) {
     layout = db.data.layouts[0];
@@ -533,7 +523,6 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
-// SALVA MÚLTIPLAS IMAGENS DE PLANO DE FUNDO
 app.post("/api/reseller/layout", (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
 
@@ -541,7 +530,6 @@ app.post("/api/reseller/layout", (req, res) => {
     return res.status(400).json({ message: "Parâmetros inválidos." });
   }
 
-  // Se enviou lista de backgrounds (múltiplas imagens), usa a lista; senão usa a backgroundUrl única
   let imageList: string[] = [];
   if (Array.isArray(backgrounds) && backgrounds.length > 0) {
     imageList = backgrounds;
@@ -551,11 +539,11 @@ app.post("/api/reseller/layout", (req, res) => {
     imageList = ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"];
   }
 
-  let layout: any = db.data.layouts.find((l: any) => l.resellerId === resellerId);
+  let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
   
   if (layout) {
     layout.backgroundUrl = imageList[0];
-    layout.backgrounds = imageList; // Grava a galeria completa de backgrounds
+    layout.backgrounds = imageList;
     layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
     layout.apps = apps;
     layout.updatedAt = new Date().toISOString();
@@ -576,7 +564,7 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Serve Vite dev or production static files
+// Servidor estático do Vite em Produção ou Middleware de desenvolvimento
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -592,8 +580,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Servidor Luna Launcher Admin executando em http://0.0.0.0:${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor Luna Launcher Admin executando na porta ${PORT}`);
   });
 }
 
