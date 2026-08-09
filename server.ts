@@ -2,19 +2,17 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import cors from "cors";
+import AdmZip from "adm-zip";
 import { createServer as createViteServer } from "vite";
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
-// Atualizado para db_v2.json para forçar um estado limpo no Render
 const DB_FILE = path.join(DATA_DIR, "db_v2.json");
 
-// Garante que o diretório de dados existe
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Estado Inicial Padrão
 const initialDb = {
   users: [
     {
@@ -40,7 +38,6 @@ const initialDb = {
       lastLogin: new Date().toISOString()
     }
   ],
-
   layouts: [
     {
       id: "lay_master",
@@ -71,7 +68,6 @@ const initialDb = {
       updatedAt: new Date().toISOString()
     }
   ],
-
   clients: [
     {
       id: "cli_101",
@@ -86,7 +82,6 @@ const initialDb = {
       createdAt: new Date(Date.now() - 10 * 86400000).toISOString()
     }
   ],
-
   otaVersion: {
     id: "ota_v210",
     versionCode: 3,
@@ -98,11 +93,9 @@ const initialDb = {
     fileSizeBytes: 18450000,
     updatedAt: new Date().toISOString()
   },
-
   apiLogs: []
 };
 
-// Gerenciador de Banco de Dados JSON Local
 class DB {
   data: any;
 
@@ -132,8 +125,6 @@ class DB {
 }
 
 const db = new DB();
-
-// Express Setup
 const app = express();
 
 app.use(cors({
@@ -172,31 +163,16 @@ function recordApiLog(token: string, endpoint: string, req: express.Request, sta
   db.save();
 }
 
-function generateRandomPassword(length = 10): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$";
-  let pass = "";
-  for (let i = 0; i < length; i++) {
-    pass += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return pass;
-}
-
-// Força os clientes HTTP (OkHttp/Glide/Coil) a nunca usarem cache desatualizado
 const disableCache = (res: express.Response) => {
   res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
 };
 
-// -------------------------------------------------------------
-// 1. ENDPOINTS DA API PÚBLICA PARA O LUNA LAUNCHER (ANDROID TV)
-// -------------------------------------------------------------
-
 function resolveLayoutAndClient(tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Tenta encontrar o cliente por MAC Address ou Token do Dispositivo
   let client = (db.data.clients || []).find((c: any) => {
     const cMac = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cToken = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -208,24 +184,19 @@ function resolveLayoutAndClient(tokenInput?: string) {
   let reseller: any;
 
   if (client) {
-    // Busca o revendedor proprietário do dispositivo encontrado
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
   }
 
   if (!reseller && rawToken) {
-    // Tenta encontrar diretamente pelo Token da Revenda (ex: REV-JYWMOC)
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase() === rawToken);
   }
 
-  // Fallback para Master Admin apenas se não houver NENHUM vínculo
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Tenta buscar o layout específico do revendedor
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
 
-  // Se o revendedor não possuir layout na tabela, cria um layout automaticamente
   if (!layout) {
     layout = {
       id: "lay_" + reseller.id,
@@ -249,6 +220,44 @@ function resolveLayoutAndClient(tokenInput?: string) {
   return { client, reseller, layout };
 }
 
+// -------------------------------------------------------------
+// ROTA DE GERADOR / DOWNLOAD DE APK CUSTOMIZADO (INJEÇÃO ZIP)
+// -------------------------------------------------------------
+app.get("/api/v1/apk/download", (req, res) => {
+  try {
+    const token = (req.query.token as string) || "DEFAULT_TOKEN";
+    
+    // Procura o arquivo base.apk na pasta public
+    const baseApkPath = path.join(process.cwd(), "public", "base.apk");
+
+    if (!fs.existsSync(baseApkPath)) {
+      return res.status(404).json({
+        status: "error",
+        message: "O arquivo base.apk não foi encontrado no servidor."
+      });
+    }
+
+    // Leitura e modificacao do APK usando adm-zip
+    const zip = new AdmZip(baseApkPath);
+    const configContent = JSON.stringify({ resellerToken: token }, null, 2);
+    
+    zip.addFile("assets/config.json", Buffer.from(configContent, "utf-8"));
+    const outputBuffer = zip.toBuffer();
+
+    res.setHeader("Content-Type", "application/vnd.android.package-archive");
+    res.setHeader("Content-Disposition", `attachment; filename="LunaLauncher_${token}.apk"`);
+    res.setHeader("Content-Length", outputBuffer.length);
+    
+    return res.send(outputBuffer);
+  } catch (error) {
+    console.error("Erro ao gerar APK:", error);
+    return res.status(500).json({ status: "error", message: "Erro ao processar o APK." });
+  }
+});
+
+// -------------------------------------------------------------
+// 1. ENDPOINTS DA API PÚBLICA PARA O LUNA LAUNCHER (ANDROID TV)
+// -------------------------------------------------------------
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
@@ -440,8 +449,6 @@ app.get("/api/v1/launcher/config", (req, res) => {
 // -------------------------------------------------------------
 // 2. ENDPOINTS ADMINISTRATIVOS DO PAINEL WEB
 // -------------------------------------------------------------
-
-// ENDPOINT DE LOGIN UNIFICADO
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -525,7 +532,6 @@ app.get("/api/admin/logs", (req, res) => {
   return res.json(db.data.apiLogs || []);
 });
 
-// Endpoints OTA
 app.get("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
@@ -549,7 +555,6 @@ app.post("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
 
-// Endpoints Revendedores
 app.get("/api/admin/resellers", (req, res) => {
   const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
   
@@ -638,7 +643,6 @@ app.delete("/api/admin/resellers/:id", (req, res) => {
   return res.json({ status: "success" });
 });
 
-// Endpoints Clientes (Gestão de Dispositivos)
 app.get("/api/reseller/clients", (req, res) => {
   const { resellerId } = req.query;
   let clients = db.data.clients || [];
@@ -719,7 +723,6 @@ app.delete("/api/reseller/clients/:id", (req, res) => {
   return res.json({ status: "success" });
 });
 
-// Layout APIs
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
   let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
@@ -776,7 +779,6 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Servidor estático e fallback do Vite/React
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
