@@ -58,8 +58,7 @@ const initialDb = {
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
-        ],
-      
+      ],
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
@@ -446,6 +445,53 @@ app.post("/api/auth/login", (req, res) => {
       status: user.status
     }
   });
+});
+
+// Endpoint de Estatísticas Globais (Resolve a tela carregando do Dashboard)
+app.get("/api/admin/stats", (req, res) => {
+  const resellers = db.data.users.filter((u: any) => u.role === "reseller");
+  const clients = db.data.clients || [];
+  
+  const now = new Date();
+  const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
+  const expiredClients = clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status === "expired").length;
+
+  return res.json({
+    totalResellers: resellers.length,
+    activeResellers: resellers.filter((r: any) => r.status === "active").length,
+    totalClients: clients.length,
+    activeClients,
+    expiredClients,
+    otaVersion: db.data.otaVersion?.versionName || "1.0.0",
+    totalApiRequests: db.data.apiLogs?.length || 0
+  });
+});
+
+// Endpoint de Logs do Sistema
+app.get("/api/admin/logs", (req, res) => {
+  return res.json(db.data.apiLogs || []);
+});
+
+// Endpoints de Versão OTA (Busca e Atualização)
+app.get("/api/admin/ota", (req, res) => {
+  return res.json(db.data.otaVersion);
+});
+
+app.post("/api/admin/ota", (req, res) => {
+  const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
+
+  db.data.otaVersion = {
+    ...db.data.otaVersion,
+    versionCode: Number(versionCode || db.data.otaVersion.versionCode),
+    versionName: versionName || db.data.otaVersion.versionName,
+    downloadUrl: downloadUrl || db.data.otaVersion.downloadUrl,
+    forceUpdate: Boolean(forceUpdate),
+    releaseNotes: releaseNotes || db.data.otaVersion.releaseNotes,
+    updatedAt: new Date().toISOString()
+  };
+
+  db.save();
+  return res.json(db.data.otaVersion);
 });
 
 app.get("/api/admin/resellers", (req, res) => {
