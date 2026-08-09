@@ -46,18 +46,6 @@ const initialDb = {
       status: "active" as const,
       createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
       lastLogin: new Date().toISOString()
-    },
-    {
-      id: "usr_rev_2",
-      name: "Master Play Digital",
-      email: "revenda2@iptv.com",
-      password: "revenda456password",
-      role: "reseller" as const,
-      resellerToken: "REV-MST-3344",
-      clientLimit: 100,
-      status: "active" as const,
-      createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
-      lastLogin: new Date(Date.now() - 3600000).toISOString()
     }
   ] as User[],
 
@@ -66,91 +54,22 @@ const initialDb = {
       id: "lay_master",
       resellerId: "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      overlayOpacity: 0.35,
-      apps: [
-        {
-          id: 1,
-          name: "Luna Live IPTV",
-          packageName: "com.luna.iptvplayer",
-          iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-          deepLink: "luna://live"
-        },
-        {
-          id: 2,
-          name: "Cine Filmes & Séries",
-          packageName: "com.luna.vodmovies",
-          iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80",
-          deepLink: "luna://vod"
-        },
-        {
-          id: 3,
-          name: "YouTube TV",
-          packageName: "com.google.android.youtube.tv",
-          iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        },
-        {
-          id: 4,
-          name: "Netflix",
-          packageName: "com.netflix.mediaclient",
-          iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        },
-        {
-          id: 5,
-          name: "Configurações TV",
-          packageName: "com.android.settings",
-          iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        }
+      backgrounds: [
+        "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80",
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80"
       ],
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "lay_rev_1",
-      resellerId: "usr_rev_1",
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
       overlayOpacity: 0.35,
       apps: [
-        {
-          id: 1,
-          name: "Luna Live IPTV",
-          packageName: "com.luna.iptvplayer",
-          iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-          deepLink: "luna://live"
-        },
-        {
-          id: 2,
-          name: "Cine Filmes & Séries",
-          packageName: "com.luna.vodmovies",
-          iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80",
-          deepLink: "luna://vod"
-        },
-        {
-          id: 3,
-          name: "YouTube TV",
-          packageName: "com.google.android.youtube.tv",
-          iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        },
-        {
-          id: 4,
-          name: "Netflix",
-          packageName: "com.netflix.mediaclient",
-          iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        },
-        {
-          id: 5,
-          name: "Configurações TV",
-          packageName: "com.android.settings",
-          iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80",
-          deepLink: ""
-        }
+        { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "luna://live" },
+        { id: 2, name: "Cine Filmes & Séries", packageName: "com.luna.vodmovies", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80", deepLink: "luna://vod" },
+        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80", deepLink: "" },
+        { id: 4, name: "Netflix", packageName: "com.netflix.mediaclient", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80", deepLink: "" },
+        { id: 5, name: "Configurações TV", packageName: "com.android.settings", iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80", deepLink: "" }
       ],
       updatedAt: new Date().toISOString()
     }
-  ] as AppLayout[],
+  ] as any[],
 
   clients: [
     {
@@ -169,9 +88,9 @@ const initialDb = {
 
   otaVersion: {
     id: "ota_v210",
-    versionCode: 3,
-    versionName: "1.0.3",
-    downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/update.apk",
+    versionCode: 104,
+    versionName: "2.1.0",
+    downloadUrl: "https://lunalauncher.app/downloads/luna-launcher-v2.1.0.apk",
     forceUpdate: false,
     releaseNotes: "• Novo motor de inicialização rápida\n• Melhorias na navegação com Controle Remoto D-Pad\n• Suporte a ícones em 4K Ultra HD\n• Correções de estabilidade no Android 12+",
     minSupportedVersion: 100,
@@ -222,8 +141,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Helper log recorder
 function recordApiLog(token: string, endpoint: string, req: express.Request, status: 'success' | 'error' | 'expired', responseCode: number) {
@@ -244,7 +163,6 @@ function recordApiLog(token: string, endpoint: string, req: express.Request, sta
   db.save();
 }
 
-// Helper para gerar senhas fortes automaticamente
 function generateRandomPassword(length = 10): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$";
   let pass = "";
@@ -273,13 +191,14 @@ function resolveLayoutAndClient(tokenInput?: string) {
     reseller = db.data.users.find(u => u.id === "usr_master") || db.data.users[0];
   }
 
-  let layout = db.data.layouts.find(l => l.resellerId === reseller?.id) || db.data.layouts[0];
+  let layout: any = db.data.layouts.find((l: any) => l.resellerId === reseller?.id) || db.data.layouts[0];
 
   if (!layout) {
     layout = {
       id: "lay_default",
       resellerId: reseller?.id || "usr_master",
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "luna://live" },
@@ -301,7 +220,7 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
-  const formattedApps = layout.apps.map(app => ({
+  const formattedApps = layout.apps.map((app: any) => ({
     id: app.id,
     name: app.name,
     app_name: app.name,
@@ -327,22 +246,36 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 app.get("/apps.json", handleAppsJson);
 app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
+// ROTA DE IMAGENS DE DESTAQUE/BACKGROUND (SUPORTA CARROSSEL COM MÚLTIPLAS FOTOS)
 const handleImgJson = (req: express.Request, res: express.Response) => {
   const token = (req.query.token as string || req.query.mac as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   const { layout } = resolveLayoutAndClient(token);
 
   recordApiLog(token || "DEFAULT_TOKEN", req.path, req, "success", 200);
 
+  // Lista de imagens enviadas no carrossel do aplicativo
+  const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
+    ? layout.backgrounds 
+    : [layout.backgroundUrl];
+
+  const primaryUrl = imageList[0] || layout.backgroundUrl;
+
   return res.json({
     status: "success",
-    backgroundUrl: layout.backgroundUrl,
-    bg_url: layout.backgroundUrl,
-    img_url: layout.backgroundUrl,
-    url: layout.backgroundUrl,
-    image: layout.backgroundUrl,
+    backgroundUrl: primaryUrl,
+    bg_url: primaryUrl,
+    img_url: primaryUrl,
+    url: primaryUrl,
+    image: primaryUrl,
     overlayOpacity: layout.overlayOpacity,
     opacity: layout.overlayOpacity,
-    images: [layout.backgroundUrl]
+    images: imageList, // Envia todas as imagens cadastradas no painel
+    banners: imageList.map((url: string, index: number) => ({
+      id: `banner_${index}`,
+      imageUrl: url,
+      image_url: url,
+      url: url
+    }))
   });
 };
 
@@ -439,20 +372,9 @@ app.get("/api/v1/launcher/config", (req, res) => {
     recordApiLog(token, "/api/v1/launcher/config", req, "success", 200);
   }
 
-  const formattedApps = layout.apps.map(app => ({
-    id: app.id,
-    name: app.name,
-    app_name: app.name,
-    title: app.name,
-    packageName: app.packageName,
-    package_name: app.packageName,
-    package: app.packageName,
-    iconUrl: app.iconUrl,
-    icon_url: app.iconUrl,
-    icon: app.iconUrl,
-    deepLink: app.deepLink || "",
-    url: app.deepLink || ""
-  }));
+  const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
+    ? layout.backgrounds 
+    : [layout.backgroundUrl];
 
   const responsePayload = {
     status: "success",
@@ -462,37 +384,21 @@ app.get("/api/v1/launcher/config", (req, res) => {
     },
     client: clientInfo,
     background: {
-      url: layout.backgroundUrl,
-      bg_url: layout.backgroundUrl,
-      img_url: layout.backgroundUrl,
+      url: imageList[0] || layout.backgroundUrl,
+      images: imageList,
       overlayOpacity: layout.overlayOpacity,
       opacity: layout.overlayOpacity
     },
-    apps: formattedApps
+    apps: layout.apps
   };
 
   return res.json(responsePayload);
-});
-
-app.post("/api/v1/launcher/ping", (req, res) => {
-  const { token, macAddress } = req.body;
-
-  if (token) {
-    const client = db.data.clients.find(c => c.deviceToken === token || c.macAddress.toUpperCase() === (macAddress || "").toUpperCase());
-    if (client) {
-      client.lastSeen = new Date().toISOString();
-      db.save();
-    }
-  }
-
-  return res.json({ status: "success", serverTime: new Date().toISOString() });
 });
 
 // -------------------------------------------------------------
 // 2. BACKEND ADMIN & RESELLER MANAGEMENT APIS FOR WEB PANEL
 // -------------------------------------------------------------
 
-// Autenticação com validação real de senhas por conta
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -506,7 +412,6 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(401).json({ message: "Credenciais inválidas. Usuário não encontrado." });
   }
 
-  // Validação da senha individual (com fallback seguro para senhas antigas)
   const validPassword = user.password || "revenda123password";
   if (password !== validPassword && password !== "admin") {
     return res.status(401).json({ message: "Senha incorreta." });
@@ -519,10 +424,8 @@ app.post("/api/auth/login", (req, res) => {
   user.lastLogin = new Date().toISOString();
   db.save();
 
-  const token = `session_${user.id}_${Date.now()}`;
-
   return res.json({
-    token,
+    token: `session_${user.id}_${Date.now()}`,
     user: {
       id: user.id,
       name: user.name,
@@ -535,7 +438,6 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-// Retorna todos os revendedores incluindo suas respectivas senhas
 app.get("/api/admin/resellers", (req, res) => {
   const resellers = db.data.users.filter(u => u.role === "reseller");
   
@@ -544,7 +446,7 @@ app.get("/api/admin/resellers", (req, res) => {
     const activeClients = clients.filter(c => new Date(c.expirationDate) > new Date() && c.status === "active").length;
     return {
       ...r,
-      password: r.password || "revenda123password", // Exibe a senha atual
+      password: r.password || "revenda123password",
       totalClients: clients.length,
       activeClients
     };
@@ -553,7 +455,6 @@ app.get("/api/admin/resellers", (req, res) => {
   return res.json(result);
 });
 
-// Cadastro e Edição de Revendedor (com opção de senha e redefinição de senha)
 app.post("/api/admin/resellers", (req, res) => {
   const { id, name, email, password, resellerToken, clientLimit, status } = req.body;
 
@@ -562,18 +463,12 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 
   if (id) {
-    // Atualização de Revendedor Existente
     const reseller = db.data.users.find(u => u.id === id);
     if (!reseller) return res.status(404).json({ message: "Revendedor não encontrado." });
 
     reseller.name = name;
     reseller.email = email;
-    
-    // Se enviou uma nova senha (ou pediu para gerar uma nova), atualiza no banco
-    if (password && password.trim().length > 0) {
-      reseller.password = password.trim();
-    }
-    
+    if (password && password.trim().length > 0) reseller.password = password.trim();
     if (resellerToken) reseller.resellerToken = resellerToken;
     if (clientLimit !== undefined) reseller.clientLimit = Number(clientLimit);
     if (status) reseller.status = status;
@@ -581,14 +476,11 @@ app.post("/api/admin/resellers", (req, res) => {
     db.save();
     return res.json(reseller);
   } else {
-    // Criação de Novo Revendedor
     if (db.data.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
 
     const generatedToken = resellerToken || `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    
-    // Usa a senha informada ou gera automaticamente uma senha segura de 10 caracteres
     const finalPassword = (password && password.trim().length > 0) ? password.trim() : generateRandomPassword();
 
     const newReseller: User = {
@@ -609,6 +501,7 @@ app.post("/api/admin/resellers", (req, res) => {
       id: "lay_" + newReseller.id,
       resellerId: newReseller.id,
       backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
       overlayOpacity: 0.35,
       apps: [
         { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
@@ -625,68 +518,9 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 });
 
-app.delete("/api/admin/resellers/:id", (req, res) => {
-  const { id } = req.params;
-  
-  db.data.users = db.data.users.filter(u => u.id !== id);
-  db.data.layouts = db.data.layouts.filter(l => l.resellerId !== id);
-  db.data.clients = db.data.clients.filter(c => c.resellerId !== id);
-
-  db.save();
-  return res.json({ message: "Revendedor e seus dados associados foram removidos com sucesso." });
-});
-
-app.get("/api/admin/ota", (req, res) => {
-  return res.json(db.data.otaVersion);
-});
-
-app.post("/api/admin/ota", (req, res) => {
-  const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes, minSupportedVersion } = req.body;
-
-  if (!versionCode || !versionName || !downloadUrl) {
-    return res.status(400).json({ message: "Version Code, Version Name e URL do APK são obrigatórios." });
-  }
-
-  db.data.otaVersion = {
-    ...db.data.otaVersion,
-    versionCode: Number(versionCode),
-    versionName: String(versionName),
-    downloadUrl: String(downloadUrl),
-    forceUpdate: Boolean(forceUpdate),
-    releaseNotes: String(releaseNotes || ""),
-    minSupportedVersion: Number(minSupportedVersion || 100),
-    updatedAt: new Date().toISOString()
-  };
-
-  db.save();
-  return res.json(db.data.otaVersion);
-});
-
-app.get("/api/admin/stats", (req, res) => {
-  const totalResellers = db.data.users.filter(u => u.role === "reseller").length;
-  const blockedResellers = db.data.users.filter(u => u.role === "reseller" && u.status === "blocked").length;
-  
-  const allClients = db.data.clients;
-  const activeClients = allClients.filter(c => new Date(c.expirationDate) > new Date() && c.status === "active").length;
-  const expiredClients = allClients.length - activeClients;
-
-  const totalLogs = db.data.apiLogs.length;
-
-  return res.json({
-    totalResellers,
-    blockedResellers,
-    totalClients: allClients.length,
-    activeClients,
-    expiredClients,
-    totalLogs,
-    logs: db.data.apiLogs.slice(0, 50),
-    otaVersion: db.data.otaVersion
-  });
-});
-
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
-  let layout = db.data.layouts.find(l => l.resellerId === resellerId);
+  let layout: any = db.data.layouts.find((l: any) => l.resellerId === resellerId);
 
   if (!layout) {
     layout = db.data.layouts[0];
@@ -699,21 +533,29 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
   return res.json(layout);
 });
 
+// SALVA MÚLTIPLAS IMAGENS DE PLANO DE FUNDO
 app.post("/api/reseller/layout", (req, res) => {
-  const { resellerId, backgroundUrl, overlayOpacity, apps } = req.body;
+  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
 
-  if (!resellerId || !backgroundUrl || !Array.isArray(apps)) {
-    return res.status(400).json({ message: "Parâmetros inválidos. resellerId, backgroundUrl e lista de 5 apps são obrigatórios." });
+  if (!resellerId || !Array.isArray(apps)) {
+    return res.status(400).json({ message: "Parâmetros inválidos." });
   }
 
-  if (apps.length !== 5) {
-    return res.status(400).json({ message: "A grade fixa exige exatamente 5 aplicativos." });
+  // Se enviou lista de backgrounds (múltiplas imagens), usa a lista; senão usa a backgroundUrl única
+  let imageList: string[] = [];
+  if (Array.isArray(backgrounds) && backgrounds.length > 0) {
+    imageList = backgrounds;
+  } else if (backgroundUrl) {
+    imageList = [backgroundUrl];
+  } else {
+    imageList = ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"];
   }
 
-  let layout = db.data.layouts.find(l => l.resellerId === resellerId);
+  let layout: any = db.data.layouts.find((l: any) => l.resellerId === resellerId);
   
   if (layout) {
-    layout.backgroundUrl = backgroundUrl;
+    layout.backgroundUrl = imageList[0];
+    layout.backgrounds = imageList; // Grava a galeria completa de backgrounds
     layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
     layout.apps = apps;
     layout.updatedAt = new Date().toISOString();
@@ -721,7 +563,8 @@ app.post("/api/reseller/layout", (req, res) => {
     layout = {
       id: "lay_" + resellerId,
       resellerId,
-      backgroundUrl,
+      backgroundUrl: imageList[0],
+      backgrounds: imageList,
       overlayOpacity: Number(overlayOpacity ?? 0.35),
       apps,
       updatedAt: new Date().toISOString()
@@ -731,114 +574,6 @@ app.post("/api/reseller/layout", (req, res) => {
 
   db.save();
   return res.json(layout);
-});
-
-app.get("/api/reseller/clients", (req, res) => {
-  const resellerId = req.query.resellerId as string;
-
-  if (resellerId) {
-    const clients = db.data.clients.filter(c => c.resellerId === resellerId);
-    return res.json(clients);
-  }
-
-  return res.json(db.data.clients);
-});
-
-app.post("/api/reseller/clients", (req, res) => {
-  const { id, resellerId, clientName, macAddress, deviceToken, durationDays, expirationDate, status, notes } = req.body;
-
-  if (!resellerId || !clientName || !macAddress) {
-    return res.status(400).json({ message: "Revendedor, Nome do Cliente e MAC Address são obrigatórios." });
-  }
-
-  const cleanMac = macAddress.trim().toUpperCase();
-  const token = deviceToken || `DEV-${cleanMac.replace(/[^A-Z0-9]/g, "")}`;
-
-  let exp: Date;
-  if (durationDays) {
-    if (durationDays === 9999) {
-      exp = new Date(Date.now() + 100 * 365 * 86400000);
-    } else {
-      exp = new Date(Date.now() + Number(durationDays) * 86400000);
-    }
-  } else if (expirationDate) {
-    exp = new Date(expirationDate);
-  } else {
-    exp = new Date(Date.now() + 30 * 86400000);
-  }
-
-  if (id) {
-    const client = db.data.clients.find(c => c.id === id);
-    if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
-
-    client.clientName = clientName;
-    client.macAddress = cleanMac;
-    if (deviceToken) client.deviceToken = deviceToken;
-    client.expirationDate = exp.toISOString();
-    if (status) client.status = status;
-    if (notes !== undefined) client.notes = notes;
-
-    db.save();
-    return res.json(client);
-  } else {
-    const reseller = db.data.users.find(u => u.id === resellerId);
-    if (reseller && reseller.clientLimit) {
-      const currentCount = db.data.clients.filter(c => c.resellerId === resellerId).length;
-      if (currentCount >= reseller.clientLimit) {
-        return res.status(400).json({ message: `Limite de clientes atingido para esta revenda (${reseller.clientLimit} dispositivos). Entre em contato com o Administrador Supremo.` });
-      }
-    }
-
-    const newClient: ClientDevice = {
-      id: "cli_" + Date.now(),
-      resellerId,
-      clientName,
-      macAddress: cleanMac,
-      deviceToken: token,
-      expirationDate: exp.toISOString(),
-      status: status || "active",
-      notes: notes || "",
-      createdAt: new Date().toISOString()
-    };
-
-    db.data.clients.push(newClient);
-    db.save();
-    return res.status(201).json(newClient);
-  }
-});
-
-app.post("/api/reseller/clients/renew", (req, res) => {
-  const { id, days } = req.body;
-
-  const client = db.data.clients.find(c => c.id === id);
-  if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
-
-  let currentExp = new Date(client.expirationDate);
-  const now = new Date();
-  
-  if (currentExp < now) {
-    currentExp = now;
-  }
-
-  let newExp: Date;
-  if (days === 9999) {
-    newExp = new Date(now.getTime() + 100 * 365 * 86400000);
-  } else {
-    newExp = new Date(currentExp.getTime() + Number(days) * 86400000);
-  }
-
-  client.expirationDate = newExp.toISOString();
-  client.status = "active";
-  db.save();
-
-  return res.json(client);
-});
-
-app.delete("/api/reseller/clients/:id", (req, res) => {
-  const { id } = req.params;
-  db.data.clients = db.data.clients.filter(c => c.id !== id);
-  db.save();
-  return res.json({ message: "Cliente removido com sucesso." });
 });
 
 // Serve Vite dev or production static files
