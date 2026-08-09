@@ -65,7 +65,7 @@ const initialDb = {
         { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
         { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
         { id: 4, name: "Netflix", packageName: "com.netflix.mediaclient", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/netflix.apk" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/settings.png", deepLink: "" }
+        { id: 5, name: "Configurações TV", packageName: "com.android.tv.settings", iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80", deepLink: "" }
       ],
       updatedAt: new Date().toISOString()
     }
@@ -90,7 +90,7 @@ const initialDb = {
     id: "ota_v210",
     versionCode: 104,
     versionName: "2.1.0",
-    downloadUrl: "https://lunalauncher.app/downloads/luna-launcher-v2.1.0.apk",
+    downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/luna-launcher-v2.1.0.apk",
     forceUpdate: false,
     releaseNotes: "• Novo motor de inicialização rápida\n• Melhorias na navegação com Controle Remoto D-Pad\n• Suporte a ícones em 4K Ultra HD\n• Correções de estabilidade no Android 12+",
     minSupportedVersion: 100,
@@ -135,7 +135,6 @@ const db = new DB();
 // Express Setup
 const app = express();
 
-// Configuração Avançada de CORS para autorizar Hostinger + Navegadores
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -143,7 +142,6 @@ app.use(cors({
   credentials: false
 }));
 
-// Libera requisições Preflight (OPTIONS) para evitar bloqueio no login
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -154,7 +152,6 @@ app.options('*', (req, res) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Gravação de Logs de API
 function recordApiLog(token: string, endpoint: string, req: express.Request, status: string, responseCode: number) {
   const newLog = {
     id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
@@ -203,24 +200,6 @@ function resolveLayoutAndClient(tokenInput?: string) {
   }
 
   let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id) || db.data.layouts[0];
-
-  if (!layout) {
-    layout = {
-      id: "lay_default",
-      resellerId: reseller?.id || "usr_master",
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
-      overlayOpacity: 0.35,
-      apps: [
-        { id: 1, name: "Luna Live IPTV", packageName: "com.luna.iptvplayer", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "luna://live" },
-        { id: 2, name: "Cine Filmes & Séries", packageName: "com.luna.vodmovies", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80", deepLink: "luna://vod" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80", deepLink: "" },
-        { id: 4, name: "Netflix", packageName: "com.netflix.mediaclient", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80", deepLink: "" },
-        { id: 5, name: "Configurações TV", packageName: "com.android.settings", iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80", deepLink: "" }
-      ],
-      updatedAt: new Date().toISOString()
-    };
-  }
 
   return { client, reseller, layout };
 }
@@ -447,7 +426,6 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-// Endpoint de Estatísticas Globais (Resolve a tela carregando do Dashboard)
 app.get("/api/admin/stats", (req, res) => {
   const resellers = db.data.users.filter((u: any) => u.role === "reseller");
   const clients = db.data.clients || [];
@@ -467,18 +445,17 @@ app.get("/api/admin/stats", (req, res) => {
   });
 });
 
-// Endpoint de Logs do Sistema
 app.get("/api/admin/logs", (req, res) => {
   return res.json(db.data.apiLogs || []);
 });
 
-// Endpoints de Versão OTA (Busca e Atualização)
+// Endpoints OTA
 app.get("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
 
 app.post("/api/admin/ota", (req, res) => {
-  const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
+  const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes, minSupportedVersion, fileSizeBytes } = req.body;
 
   db.data.otaVersion = {
     ...db.data.otaVersion,
@@ -487,6 +464,8 @@ app.post("/api/admin/ota", (req, res) => {
     downloadUrl: downloadUrl || db.data.otaVersion.downloadUrl,
     forceUpdate: Boolean(forceUpdate),
     releaseNotes: releaseNotes || db.data.otaVersion.releaseNotes,
+    minSupportedVersion: Number(minSupportedVersion || db.data.otaVersion.minSupportedVersion || 100),
+    fileSizeBytes: Number(fileSizeBytes || db.data.otaVersion.fileSizeBytes || 18450000),
     updatedAt: new Date().toISOString()
   };
 
@@ -494,11 +473,12 @@ app.post("/api/admin/ota", (req, res) => {
   return res.json(db.data.otaVersion);
 });
 
+// Endpoints Revendedores
 app.get("/api/admin/resellers", (req, res) => {
   const resellers = db.data.users.filter((u: any) => u.role === "reseller");
   
   const result = resellers.map((r: any) => {
-    const clients = db.data.clients.filter((c: any) => c.resellerId === r.id);
+    const clients = (db.data.clients || []).filter((c: any) => c.resellerId === r.id);
     const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > new Date() && c.status === "active").length;
     return {
       ...r,
@@ -574,6 +554,95 @@ app.post("/api/admin/resellers", (req, res) => {
   }
 });
 
+app.delete("/api/admin/resellers/:id", (req, res) => {
+  const { id } = req.params;
+  db.data.users = db.data.users.filter((u: any) => u.id !== id);
+  db.save();
+  return res.json({ status: "success" });
+});
+
+// Endpoints Clientes (Gestão de Dispositivos)
+app.get("/api/reseller/clients", (req, res) => {
+  const { resellerId } = req.query;
+  let clients = db.data.clients || [];
+
+  if (resellerId) {
+    clients = clients.filter((c: any) => c.resellerId === resellerId);
+  }
+
+  return res.json(clients);
+});
+
+app.post("/api/reseller/clients", (req, res) => {
+  const { id, resellerId, clientName, macAddress, deviceToken, days, status, notes } = req.body;
+
+  if (!clientName || (!macAddress && !deviceToken)) {
+    return res.status(400).json({ message: "Nome do Cliente e MAC Address ou Token são obrigatórios." });
+  }
+
+  if (!db.data.clients) db.data.clients = [];
+
+  if (id) {
+    const client = db.data.clients.find((c: any) => c.id === id);
+    if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
+
+    client.clientName = clientName;
+    if (macAddress) client.macAddress = macAddress.toUpperCase();
+    if (deviceToken) client.deviceToken = deviceToken;
+    if (status) client.status = status;
+    if (notes !== undefined) client.notes = notes;
+
+    db.save();
+    return res.json(client);
+  } else {
+    const finalMac = (macAddress || "").toUpperCase();
+    const finalToken = deviceToken || `DEV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const expDays = Number(days || 30);
+
+    const newClient = {
+      id: "cli_" + Date.now(),
+      resellerId: resellerId || "usr_rev_1",
+      clientName,
+      macAddress: finalMac,
+      deviceToken: finalToken,
+      expirationDate: new Date(Date.now() + expDays * 86400000).toISOString(),
+      status: status || "active",
+      notes: notes || "",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    db.data.clients.push(newClient);
+    db.save();
+    return res.status(201).json(newClient);
+  }
+});
+
+app.post("/api/reseller/clients/renew", (req, res) => {
+  const { id, days } = req.body;
+  const client = (db.data.clients || []).find((c: any) => c.id === id);
+
+  if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
+
+  const addDays = Number(days || 30);
+  const currentExp = new Date(client.expirationDate);
+  const baseDate = currentExp > new Date() ? currentExp : new Date();
+
+  client.expirationDate = new Date(baseDate.getTime() + addDays * 86400000).toISOString();
+  client.status = "active";
+
+  db.save();
+  return res.json(client);
+});
+
+app.delete("/api/reseller/clients/:id", (req, res) => {
+  const { id } = req.params;
+  db.data.clients = (db.data.clients || []).filter((c: any) => c.id !== id);
+  db.save();
+  return res.json({ status: "success" });
+});
+
+// Layout APIs
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
   const { resellerId } = req.params;
   let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
@@ -630,7 +699,7 @@ app.post("/api/reseller/layout", (req, res) => {
   return res.json(layout);
 });
 
-// Servidor estático do Vite em Produção ou Middleware de desenvolvimento
+// Servidor estático e fallback do Vite/React
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
