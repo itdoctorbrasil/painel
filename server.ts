@@ -41,21 +41,26 @@ const initialDb = {
     {
       id: "lay_master",
       resellerId: "usr_master",
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
       backgrounds: [
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
       ],
       overlayOpacity: 0.35,
       apps: [
-        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
-        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
-        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
+        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
+        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
+        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
+        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneing.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
         { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png", deepLink: "" }
       ],
       updatedAt: new Date().toISOString()
