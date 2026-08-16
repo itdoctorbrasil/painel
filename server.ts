@@ -7,8 +7,8 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db_v2.json");
 
-const EXPIRATION_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/expiration.png";
-const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/newclient.png";
+const EXPIRATION_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/expiration.webp";
+const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/newclient.webp";
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
