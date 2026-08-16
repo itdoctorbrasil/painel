@@ -178,7 +178,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução com identificação estrita por MAC e envio de imagem de bloqueio remota
+ * Resolução com prioridade estrita de bloqueio do cliente
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -189,7 +189,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
   let client: any = null;
 
-  // 1. Prioridade absoluta para o MAC do aparelho
+  // 1. Prioridade Máxima: Busca por MAC Address
   if (cleanMac.length > 0) {
     client = (db.data.clients || []).find((c: any) => {
       const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -197,11 +197,12 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     });
   }
 
-  // 2. Se não achou por MAC, busca por token único do dispositivo (ignora tokens genéricos de revenda)
-  if (!client && cleanToken.length > 0 && !rawToken.startsWith("REV")) {
+  // 2. Segunda Busca: Por Device Token exato cadastrado no Cliente
+  if (!client && cleanToken.length > 0) {
     client = (db.data.clients || []).find((c: any) => {
       const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-      return cTokenClean.length > 0 && cTokenClean === cleanToken;
+      const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return (cTokenClean.length > 0 && cTokenClean === cleanToken) || (cMacClean.length > 0 && cMacClean === cleanToken);
     });
   }
 
@@ -209,12 +210,14 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let isExpired = false;
   let isNewClient = false;
 
+  // SE ENCONTROU O CLIENTE: Valida o status dele com prioridade total
   if (client) {
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
+    // QUALQUER STATUS DIFERENTE DE "active" (Ex: "suspended", "expired", "blocked") OU DATA VENCIDA -> BLOQUEIA
     const isStatusBlocked = client.status !== "active";
 
     if (isStatusBlocked || expDate < now) {
@@ -225,14 +228,17 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       }
     }
   } else {
-    // Aparelho não cadastrado
-    if (!rawToken.startsWith("REV")) {
+    // Se não encontrou o cliente e é um aparelho (tem MAC) ou não é token de revenda Master
+    const isDirectResellerQuery = cleanToken.length > 0 && (db.data.users || []).some((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
+
+    if (!isDirectResellerQuery) {
       isNewClient = true;
       isExpired = true;
     }
   }
 
-  if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
+  // Identifica a revenda se necessário
+  if (!reseller && cleanToken.length > 0) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
 
