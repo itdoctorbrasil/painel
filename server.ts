@@ -178,7 +178,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução com prioridade estrita de bloqueio do cliente
+ * Resolução com AUTO-REGISTRO inteligente e bloqueio rigoroso
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -197,7 +197,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     });
   }
 
-  // 2. Segunda Busca: Por Device Token exato cadastrado no Cliente
+  // 2. Segunda Busca: Por Device Token único cadastrado
   if (!client && cleanToken.length > 0) {
     client = (db.data.clients || []).find((c: any) => {
       const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -206,21 +206,63 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     });
   }
 
-  let reseller: any;
+  // Identifica a revenda vinculada
+  let reseller: any = null;
+  if (cleanToken.length > 0) {
+    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
+  }
+  if (!reseller && client) {
+    reseller = db.data.users.find((u: any) => u.id === client.resellerId);
+  }
+  if (!reseller) {
+    reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
+  }
+
+  // -------------------------------------------------------------
+  // AUTO-REGISTRO: Se o dispositivo é novo e tem MAC, registra no banco
+  // -------------------------------------------------------------
+  if (!client && cleanMac.length > 0) {
+    const formattedMac = rawMac.includes(":") 
+      ? rawMac 
+      : cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
+
+    const shortId = cleanMac.length >= 6 ? cleanMac.slice(-6) : cleanMac;
+
+    client = {
+      id: "cli_" + Date.now(),
+      resellerId: reseller.id,
+      clientName: `Novo Aparelho (${shortId})`,
+      macAddress: formattedMac,
+      deviceToken: `DEV-${cleanMac}`,
+      expirationDate: new Date().toISOString(), // Vencido no ato do registro
+      status: "pending", // Pendente para aprovação no painel
+      notes: "Auto-registrado via TV Box. Aguardando aprovação.",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+
+    if (!db.data.clients) db.data.clients = [];
+    db.data.clients.unshift(client);
+    db.save();
+
+    console.log(`[AUTO-REGISTRO] Novo dispositivo registrado: MAC ${formattedMac} vinculado a ${reseller.name}`);
+  }
+
   let isExpired = false;
   let isNewClient = false;
 
-  // SE ENCONTROU O CLIENTE: Valida o status dele com prioridade total
+  // SE ENCONTROU OU AUTO-REGISTROU O CLIENTE: Valida o status dele
   if (client) {
-    reseller = db.data.users.find((u: any) => u.id === client.resellerId);
-
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    // QUALQUER STATUS DIFERENTE DE "active" (Ex: "suspended", "expired", "blocked") OU DATA VENCIDA -> BLOQUEIA
-    const isStatusBlocked = client.status !== "active";
-
-    if (isStatusBlocked || expDate < now) {
+    // Se estiver pendente, exibe a tela newclient.webp
+    if (client.status === "pending") {
+      isNewClient = true;
+      isExpired = true;
+    } 
+    // Se estiver suspenso, expirado, bloqueado ou com data vencida -> exibe expiration.webp
+    else if (client.status !== "active" || expDate < now) {
       isExpired = true;
       if (client.status === "active" && expDate < now) {
         client.status = "expired";
@@ -228,22 +270,13 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       }
     }
   } else {
-    // Se não encontrou o cliente e é um aparelho (tem MAC) ou não é token de revenda Master
+    // Consulta direta sem MAC (apenas revenda)
     const isDirectResellerQuery = cleanToken.length > 0 && (db.data.users || []).some((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
 
     if (!isDirectResellerQuery) {
       isNewClient = true;
       isExpired = true;
     }
-  }
-
-  // Identifica a revenda se necessário
-  if (!reseller && cleanToken.length > 0) {
-    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
-  }
-
-  if (!reseller) {
-    reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
   if (reseller && reseller.status === "blocked") {
@@ -740,7 +773,7 @@ app.get("/api/reseller/clients", (req, res) => {
 });
 
 app.post("/api/reseller/clients", (req, res) => {
-  const { id, resellerId, clientName, macAddress, deviceToken, days, status, notes } = req.body;
+  const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
   const cleanMac = (macAddress || "").trim().toUpperCase();
   let cleanToken = (deviceToken || "").trim().toUpperCase();
@@ -767,10 +800,21 @@ app.post("/api/reseller/clients", (req, res) => {
     if (status) client.status = status;
     if (notes !== undefined) client.notes = notes;
 
+    // Atualização manual da data de expiração ou por dias adicionados
+    if (expirationDate) {
+      client.expirationDate = new Date(expirationDate).toISOString();
+    } else if (days) {
+      const expDays = Number(days);
+      client.expirationDate = new Date(Date.now() + expDays * 86400000).toISOString();
+    }
+
     db.save();
     return res.json(client);
   } else {
     const expDays = Number(days || 30);
+    const initialExpDate = expirationDate 
+      ? new Date(expirationDate).toISOString() 
+      : new Date(Date.now() + expDays * 86400000).toISOString();
 
     const newClient = {
       id: "cli_" + Date.now(),
@@ -778,7 +822,7 @@ app.post("/api/reseller/clients", (req, res) => {
       clientName,
       macAddress: cleanMac || "00:00:00:00:00:00",
       deviceToken: cleanToken,
-      expirationDate: new Date(Date.now() + expDays * 86400000).toISOString(),
+      expirationDate: initialExpDate,
       status: status || "active",
       notes: notes || "",
       lastSeen: new Date().toISOString(),
