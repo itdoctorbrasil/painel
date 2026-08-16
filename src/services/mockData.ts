@@ -9,91 +9,131 @@ export interface AppPreset {
   name: string;
   packageName: string;
   iconUrl: string;
+  deepLink?: string;
 }
 
+// -------------------------------------------------------------
+// BANNERS OFICIAIS DO LUNA LAUNCHER (HD 1080p / WEBP)
+// -------------------------------------------------------------
 export const BACKGROUND_PRESETS: BackgroundPreset[] = [
   {
     id: "preset_bg_1",
-    name: "Dark Neon Future",
-    category: "Futurista",
-    url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 1",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp"
   },
   {
     id: "preset_bg_2",
-    name: "Cinema Abstract Dark",
-    category: "Cinema",
-    url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 2",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp"
   },
   {
     id: "preset_bg_3",
-    name: "Cyberpunk City Light",
-    category: "Gamer",
-    url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 3",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp"
   },
   {
     id: "preset_bg_4",
-    name: "Purple Cosmic Mesh",
-    category: "Gradiente",
-    url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 4",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp"
   },
   {
     id: "preset_bg_5",
-    name: "Deep Blue Horizon",
-    category: "Moderno",
-    url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 5",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp"
   },
   {
     id: "preset_bg_6",
-    name: "Golden Luxury Stage",
-    category: "Premium",
-    url: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80"
+    name: "Banner Principal 6",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+  },
+  {
+    id: "preset_bg_7",
+    name: "Banner Principal 7",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp"
+  },
+  {
+    id: "preset_bg_8",
+    name: "Banner Principal 8",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp"
+  },
+  {
+    id: "preset_bg_9",
+    name: "Banner Principal 9",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp"
+  },
+  {
+    id: "preset_bg_10",
+    name: "Banner Principal 10",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp"
+  },
+  {
+    id: "preset_bg_11",
+    name: "Banner Principal 11",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp"
+  },
+  {
+    id: "preset_bg_12",
+    name: "Banner Principal 12",
+    category: "Oficial",
+    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
   }
 ];
 
+// -------------------------------------------------------------
+// APLICATIVOS PREDEFINIDOS OFICIAIS & POPULARES
+// -------------------------------------------------------------
 export const APP_PRESETS: AppPreset[] = [
   {
-    name: "Luna Live IPTV",
-    packageName: "com.luna.iptvplayer",
-    iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80"
+    name: "Velo Play",
+    packageName: "com.global.veloplaytv",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk"
   },
   {
-    name: "Cine Filmes & VOD",
-    packageName: "com.luna.vodmovies",
-    iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80"
-  },
-  {
-    name: "Séries On Demand",
-    packageName: "com.luna.seriesplayer",
-    iconUrl: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=200&auto=format&fit=crop&q=80"
+    name: "YouCine",
+    packageName: "com.world.youcinetv",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk"
   },
   {
     name: "YouTube TV",
     packageName: "com.google.android.youtube.tv",
-    iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80"
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk"
   },
   {
-    name: "Netflix",
-    packageName: "com.netflix.mediaclient",
-    iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80"
+    name: "TuneIn",
+    packageName: "tunein.player",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk"
   },
   {
-    name: "Amazon Prime Video",
+    name: "Settings",
+    packageName: "com.android.tv.settings",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png",
+    deepLink: ""
+  },
+  {
+    name: "Netflix TV",
+    packageName: "com.netflix.ninja",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/netflix.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/settings.apk"
+  },
+  {
+    name: "Prime Video",
     packageName: "com.amazon.amazonvideo.livingroom",
-    iconUrl: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=200&auto=format&fit=crop&q=80"
-  },
-  {
-    name: "Max (HBO)",
-    packageName: "com.hbo.hbonow",
-    iconUrl: "https://images.unsplash.com/photo-1586899028174-e7098604235b?w=200&auto=format&fit=crop&q=80"
-  },
-  {
-    name: "Kodi Media Center",
-    packageName: "org.xbmc.kodi",
-    iconUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200&auto=format&fit=crop&q=80"
-  },
-  {
-    name: "Configurações TV",
-    packageName: "com.android.settings",
-    iconUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=200&auto=format&fit=crop&q=80"
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/primevideo.png",
+    deepLink: ""
   }
 ];
