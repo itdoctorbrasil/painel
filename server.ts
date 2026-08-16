@@ -7,6 +7,9 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db_v2.json");
 
+const EXPIRATION_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/expiration.png";
+const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launcher/Luna/blocked/newclient.png";
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -175,7 +178,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução estrita: se o dispositivo for localizado e não estiver 'active', é bloqueio imediato
+ * Resolução com identificação estrita por MAC e envio de imagem de bloqueio remota
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -184,21 +187,27 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Localiza o cliente na base de dados
-  let client = (db.data.clients || []).find((c: any) => {
-    const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let client: any = null;
 
-    const matchMac = cleanMac.length > 0 && cMacClean === cleanMac;
-    const matchToken = cleanToken.length > 0 && cTokenClean === cleanToken;
-    const matchCrossMac = cleanToken.length > 0 && cMacClean === cleanToken;
-    const matchCrossToken = cleanMac.length > 0 && cTokenClean === cleanMac;
+  // 1. Prioridade absoluta para o MAC do aparelho
+  if (cleanMac.length > 0) {
+    client = (db.data.clients || []).find((c: any) => {
+      const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return cMacClean.length > 0 && cMacClean === cleanMac;
+    });
+  }
 
-    return matchMac || matchToken || matchCrossMac || matchCrossToken;
-  });
+  // 2. Se não achou por MAC, busca por token único do dispositivo (ignora tokens genéricos de revenda)
+  if (!client && cleanToken.length > 0 && !rawToken.startsWith("REV")) {
+    client = (db.data.clients || []).find((c: any) => {
+      const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return cTokenClean.length > 0 && cTokenClean === cleanToken;
+    });
+  }
 
   let reseller: any;
   let isExpired = false;
+  let isNewClient = false;
 
   if (client) {
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
@@ -206,7 +215,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    // Qualquer status diferente de 'active' ou data vencida é bloqueio
     const isStatusBlocked = client.status !== "active";
 
     if (isStatusBlocked || expDate < now) {
@@ -217,13 +225,13 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       }
     }
   } else {
-    // Se o aparelho não está cadastrado e não é requisição pura de revendedor
+    // Aparelho não cadastrado
     if (!rawToken.startsWith("REV")) {
+      isNewClient = true;
       isExpired = true;
     }
   }
 
-  // Identifica a revenda correspondente
   if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
@@ -243,7 +251,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     layout = db.data.layouts[0];
   }
 
-  return { client, reseller, layout, isExpired };
+  return { client, reseller, layout, isExpired, isNewClient };
 }
 
 function extractDeviceCredentials(req: express.Request) {
@@ -329,18 +337,25 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 const handleImgJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, isExpired } = resolveLayoutAndClient(mac, token);
+  const { layout, isExpired, isNewClient } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
     recordApiLog(mac || token || "ANONYMOUS", req.path, req, "expired", 200);
+    const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
+
     return res.json({
       status: "expired",
       isExpired: true,
-      backgroundUrl: "expiration",
+      backgroundUrl: blockedUrl,
+      bg_url: blockedUrl,
+      img_url: blockedUrl,
+      url: blockedUrl,
+      image: blockedUrl,
       overlayOpacity: 0.0,
-      images: ["expiration"],
+      opacity: 0.0,
+      images: [blockedUrl],
       banners: [
-        { id: "banner_expired_1", imageUrl: "expiration", image_url: "expiration", url: "expiration" }
+        { id: "banner_expired", imageUrl: blockedUrl, image_url: blockedUrl, url: blockedUrl }
       ]
     });
   }
@@ -419,10 +434,12 @@ app.get("/api/v1/launcher/config", (req, res) => {
     });
   }
 
-  const { client, reseller, layout, isExpired } = resolveLayoutAndClient(mac, token);
+  const { client, reseller, layout, isExpired, isNewClient } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
     recordApiLog(mac || token, "/api/v1/launcher/config", req, "expired", 200);
+    const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
+
     return res.json({
       status: "expired",
       isExpired: true,
@@ -441,12 +458,12 @@ app.get("/api/v1/launcher/config", (req, res) => {
         daysRemaining: 0
       } : undefined,
       background: {
-        url: "expiration",
-        images: ["expiration"],
+        url: blockedUrl,
+        images: [blockedUrl],
         overlayOpacity: 0.0
       },
       banners: [
-        { id: "banner_expired_1", imageUrl: "expiration", image_url: "expiration", url: "expiration" }
+        { id: "banner_expired", imageUrl: blockedUrl, image_url: blockedUrl, url: blockedUrl }
       ],
       apps: []
     });
