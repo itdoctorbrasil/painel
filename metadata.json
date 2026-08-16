@@ -1,5 +1,5 @@
 {
-  "name": "Luna Launcher Admin",
+  "name": "Painel - Luna Launcher",
   "description": "Painel Web de Gerenciamento",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
