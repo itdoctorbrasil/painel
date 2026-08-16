@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import cors from "cors";
-import AdmZip from "adm-zip";
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -39,10 +38,11 @@ const initialDb = {
   ],
   layouts: [
     {
-      id: "lay_master",
+      id: "lay_usr_master",
       resellerId: "usr_master",
       backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
       backgrounds: [
+        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
         "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
@@ -168,7 +168,17 @@ const disableCache = (res: express.Response) => {
 };
 
 /**
- * Função de resolução de layout e dispositivo com limpeza estrita de formatação (hífen, dois pontos, maiúsculas)
+ * Normaliza referências ao usuário Master
+ */
+function normalizeResellerId(id?: string): string {
+  if (!id || id === "master" || id === "all" || id === "usr_master") {
+    return "usr_master";
+  }
+  return id;
+}
+
+/**
+ * Resolução de layout e dispositivo com higienização estrita
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -177,7 +187,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Busca o cliente higienizando todos os caracteres do banco
   let client = (db.data.clients || []).find((c: any) => {
     const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -194,7 +203,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let isExpired = false;
 
   if (client) {
-    // Associa o cliente exatamente ao revendedor dele (ex: Marcelo)
     reseller = db.data.users.find((u: any) => u.id === client.resellerId);
 
     const now = new Date();
@@ -209,20 +217,16 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // 2. Se não for um dispositivo cadastrado de cliente, busca a conta do revendedor pelo token
-  if (!reseller && cleanToken.length > 0) {
+  if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
-  }
-  if (!reseller && cleanMac.length > 0) {
-    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanMac);
   }
 
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Busca o layout customizado daquele revendedor específico
-  let layout = db.data.layouts.find((l: any) => l.resellerId === reseller?.id);
+  const targetId = normalizeResellerId(reseller?.id);
+  let layout = db.data.layouts.find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
 
   if (!layout) {
     layout = db.data.layouts[0];
@@ -237,33 +241,25 @@ function extractDeviceCredentials(req: express.Request) {
   return { mac, token };
 }
 
-// ROTA DE GERADOR / DOWNLOAD DE APK CUSTOMIZADO
+// -------------------------------------------------------------
+// DOWNLOAD DO APK (Preserva assinatura digital intacta)
+// -------------------------------------------------------------
 app.get("/api/v1/apk/download", (req, res) => {
   try {
-    const token = (req.query.token as string) || "DEFAULT_TOKEN";
+    const token = (req.query.token as string) || "DEFAULT";
     const baseApkPath = path.join(process.cwd(), "public", "base.apk");
 
     if (!fs.existsSync(baseApkPath)) {
       return res.status(404).json({
         status: "error",
-        message: "O arquivo base.apk não foi encontrado no servidor."
+        message: "O arquivo base.apk não foi encontrado na pasta public do servidor."
       });
     }
 
-    const zip = new AdmZip(baseApkPath);
-    const configContent = JSON.stringify({ resellerToken: token }, null, 2);
-    
-    zip.addFile("assets/config.json", Buffer.from(configContent, "utf-8"));
-    const outputBuffer = zip.toBuffer();
-
-    res.setHeader("Content-Type", "application/vnd.android.package-archive");
-    res.setHeader("Content-Disposition", `attachment; filename="LunaLauncher_${token}.apk"`);
-    res.setHeader("Content-Length", outputBuffer.length);
-    
-    return res.send(outputBuffer);
+    return res.download(baseApkPath, `LunaLauncher_${token}.apk`);
   } catch (error) {
-    console.error("Erro ao gerar APK:", error);
-    return res.status(500).json({ status: "error", message: "Erro ao processar o APK." });
+    console.error("Erro ao entregar APK:", error);
+    return res.status(500).json({ status: "error", message: "Erro ao processar o download do APK." });
   }
 });
 
@@ -678,15 +674,15 @@ app.post("/api/admin/resellers", (req, res) => {
     db.data.layouts.push({
       id: "lay_" + newReseller.id,
       resellerId: newReseller.id,
-      backgroundUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80",
-      backgrounds: ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"],
+      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
+      backgrounds: ["https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp"],
       overlayOpacity: 0.35,
       apps: [
-        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80" },
-        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200&auto=format&fit=crop&q=80" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&auto=format&fit=crop&q=80" },
-        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&auto=format&fit=crop&q=80" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png" }
+        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png" },
+        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png" },
+        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png" },
+        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png" },
+        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png" }
       ],
       updatedAt: new Date().toISOString()
     });
@@ -790,61 +786,72 @@ app.delete("/api/reseller/clients/:id", (req, res) => {
   return res.json({ status: "success" });
 });
 
+// -------------------------------------------------------------
+// ROTAS DE LAYOUT (Sincronização Master e Revendedores)
+// -------------------------------------------------------------
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
-  const { resellerId } = req.params;
-  let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
+  const targetId = normalizeResellerId(req.params.resellerId);
+  let layout = db.data.layouts.find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
 
   if (!layout) {
-    layout = db.data.layouts[0];
-  }
-
-  if (!layout) {
-    return res.status(404).json({ message: "Layout não encontrado." });
-  }
-
-  return res.json(layout);
-});
-
-// SALVAMENTO DE LAYOUT CORRIGIDO: Permite remoção real de imagens sem re-injetar defaults
-app.post("/api/reseller/layout", (req, res) => {
-  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
-
-  if (!resellerId || !Array.isArray(apps)) {
-    return res.status(400).json({ message: "Parâmetros inválidos." });
-  }
-
-  let imageList: string[] = [];
-  if (Array.isArray(backgrounds) && backgrounds.length > 0) {
-    imageList = backgrounds;
-  } else if (backgroundUrl && backgroundUrl.trim().length > 0) {
-    imageList = [backgroundUrl];
-  } else {
-    imageList = ["https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80"];
-  }
-
-  let layout = db.data.layouts.find((l: any) => l.resellerId === resellerId);
-  
-  if (layout) {
-    layout.backgroundUrl = imageList[0];
-    layout.backgrounds = imageList; // Aceita a lista limpa vinda do painel
-    layout.overlayOpacity = Number(overlayOpacity ?? 0.35);
-    layout.apps = apps;
-    layout.updatedAt = new Date().toISOString();
-  } else {
     layout = {
-      id: "lay_" + resellerId,
-      resellerId,
-      backgroundUrl: imageList[0],
-      backgrounds: imageList,
-      overlayOpacity: Number(overlayOpacity ?? 0.35),
-      apps,
+      id: "lay_" + targetId,
+      resellerId: targetId,
+      backgroundUrl: db.data.layouts[0]?.backgroundUrl || "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
+      backgrounds: db.data.layouts[0]?.backgrounds || ["https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp"],
+      overlayOpacity: 0.35,
+      apps: db.data.layouts[0]?.apps || [],
       updatedAt: new Date().toISOString()
     };
     db.data.layouts.push(layout);
+    db.save();
+  }
+
+  const validImages = (layout.backgrounds && layout.backgrounds.length > 0)
+    ? layout.backgrounds
+    : [layout.backgroundUrl];
+
+  return res.json({
+    ...layout,
+    backgroundUrl: layout.backgroundUrl || validImages[0],
+    backgrounds: validImages,
+    backgroundUrls: validImages
+  });
+});
+
+app.post("/api/reseller/layout", (req, res) => {
+  const { resellerId, backgroundUrl, backgrounds, backgroundUrls, overlayOpacity, apps } = req.body;
+
+  const targetId = normalizeResellerId(resellerId);
+
+  const incomingImages = backgrounds || backgroundUrls || (backgroundUrl ? [backgroundUrl] : []);
+  const validImageList = Array.isArray(incomingImages) && incomingImages.length > 0
+    ? incomingImages
+    : ["https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp"];
+
+  const activeBg = backgroundUrl || validImageList[0];
+
+  let layoutIndex = db.data.layouts.findIndex((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
+
+  const updatedLayout = {
+    id: "lay_" + targetId,
+    resellerId: targetId,
+    backgroundUrl: activeBg,
+    backgrounds: validImageList,
+    backgroundUrls: validImageList,
+    overlayOpacity: Number(overlayOpacity ?? 0.35),
+    apps: Array.isArray(apps) ? apps : (db.data.layouts[0]?.apps || []),
+    updatedAt: new Date().toISOString()
+  };
+
+  if (layoutIndex !== -1) {
+    db.data.layouts[layoutIndex] = updatedLayout;
+  } else {
+    db.data.layouts.push(updatedLayout);
   }
 
   db.save();
-  return res.json(layout);
+  return res.json(updatedLayout);
 });
 
 async function startServer() {
