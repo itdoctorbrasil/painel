@@ -167,9 +167,6 @@ const disableCache = (res: express.Response) => {
   res.setHeader("Expires", "0");
 };
 
-/**
- * Normaliza referências ao usuário Master
- */
 function normalizeResellerId(id?: string): string {
   if (!id || id === "master" || id === "all" || id === "usr_master") {
     return "usr_master";
@@ -178,7 +175,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução de layout e dispositivo com higienização estrita
+ * Resolução aprimorada de layout e cliente com bloqueio estrito
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -187,6 +184,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
+  // 1. Tenta localizar o cliente cadastrado por MAC ou Token
   let client = (db.data.clients || []).find((c: any) => {
     const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -208,6 +206,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
+    // Validação de expiração do cliente
     if (client.status === "expired" || expDate < now) {
       isExpired = true;
       if (client.status !== "expired") {
@@ -215,14 +214,25 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
         db.save();
       }
     }
+  } else {
+    // Dispositivo NÃO cadastrado na base de clientes: Trata como não-autorizado/expirado
+    if (!rawToken.startsWith("REV")) {
+      isExpired = true;
+    }
   }
 
+  // Identifica a conta de revenda correspondente
   if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
 
   if (!reseller) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
+  }
+
+  // Se a própria revenda estiver bloqueada pelo Master, força o bloqueio
+  if (reseller && reseller.status === "blocked") {
+    isExpired = true;
   }
 
   const targetId = normalizeResellerId(reseller?.id);
@@ -328,7 +338,9 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
       backgroundUrl: "expiration",
       overlayOpacity: 0.0,
       images: ["expiration"],
-      banners: [{ id: "banner_expired", imageUrl: "expiration" }]
+      banners: [
+        { id: "banner_expired_1", imageUrl: "expiration", image_url: "expiration", url: "expiration" }
+      ]
     });
   }
 
@@ -408,32 +420,16 @@ app.get("/api/v1/launcher/config", (req, res) => {
 
   const { client, reseller, layout, isExpired } = resolveLayoutAndClient(mac, token);
 
-  if (!reseller) {
-    recordApiLog(mac || token, "/api/v1/launcher/config", req, "error", 404);
-    return res.status(404).json({
-      status: "error",
-      message: "Token de dispositivo ou revenda inválido ou não cadastrado no painel."
-    });
-  }
-
-  if (reseller.status === "blocked") {
-    recordApiLog(mac || token, "/api/v1/launcher/config", req, "error", 403);
-    return res.status(403).json({
-      status: "error",
-      message: "Esta conta de revenda está bloqueada pelo Administrador Supremo."
-    });
-  }
-
   if (isExpired) {
     recordApiLog(mac || token, "/api/v1/launcher/config", req, "expired", 200);
     return res.json({
       status: "expired",
       isExpired: true,
       message: "Seu login expirou. Entre em contato com seu revendedor.",
-      reseller: {
+      reseller: reseller ? {
         name: reseller.name,
         token: reseller.resellerToken || ""
-      },
+      } : undefined,
       client: client ? {
         id: client.id,
         name: client.clientName,
@@ -448,6 +444,9 @@ app.get("/api/v1/launcher/config", (req, res) => {
         images: ["expiration"],
         overlayOpacity: 0.0
       },
+      banners: [
+        { id: "banner_expired_1", imageUrl: "expiration", image_url: "expiration", url: "expiration" }
+      ],
       apps: []
     });
   }
@@ -496,6 +495,12 @@ app.get("/api/v1/launcher/config", (req, res) => {
       overlayOpacity: layout.overlayOpacity,
       opacity: layout.overlayOpacity
     },
+    banners: imageList.map((url: string, index: number) => ({
+      id: `banner_${index}_${Date.now()}`,
+      imageUrl: url,
+      image_url: url,
+      url: url
+    })),
     apps: layout.apps
   };
 
