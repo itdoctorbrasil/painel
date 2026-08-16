@@ -175,7 +175,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução aprimorada de layout e cliente com bloqueio estrito
+ * Resolução com bloqueio absoluto e prioritário por MAC do aparelho
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -184,7 +184,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Tenta localizar o cliente cadastrado por MAC ou Token
+  // 1. Localiza o cliente na lista cadastrada
   let client = (db.data.clients || []).find((c: any) => {
     const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const cTokenClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -206,22 +206,27 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    // Validação de expiração do cliente
-    if (client.status === "expired" || expDate < now) {
+    // Checagem rigorosa de todos os status de suspensão / expiração
+    const isStatusBlocked = client.status === "expired" ||
+                            client.status === "suspended" ||
+                            client.status === "blocked" ||
+                            client.status === "inactive";
+
+    if (isStatusBlocked || expDate < now) {
       isExpired = true;
-      if (client.status !== "expired") {
+      if (client.status === "active" && expDate < now) {
         client.status = "expired";
         db.save();
       }
     }
   } else {
-    // Dispositivo NÃO cadastrado na base de clientes: Trata como não-autorizado/expirado
+    // Aparelho NÃO cadastrado: Só não é expirado se for uma consulta com token direto de revenda sem MAC
     if (!rawToken.startsWith("REV")) {
       isExpired = true;
     }
   }
 
-  // Identifica a conta de revenda correspondente
+  // Identifica a conta de revenda associada
   if (!reseller && cleanToken.length > 0 && rawToken.startsWith("REV")) {
     reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
@@ -230,7 +235,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Se a própria revenda estiver bloqueada pelo Master, força o bloqueio
+  // Se a conta do revendedor estiver bloqueada pelo Master
   if (reseller && reseller.status === "blocked") {
     isExpired = true;
   }
@@ -252,7 +257,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// DOWNLOAD DO APK (Preserva assinatura digital intacta)
+// DOWNLOAD DO APK
 // -------------------------------------------------------------
 app.get("/api/v1/apk/download", (req, res) => {
   try {
@@ -425,7 +430,7 @@ app.get("/api/v1/launcher/config", (req, res) => {
     return res.json({
       status: "expired",
       isExpired: true,
-      message: "Seu login expirou. Entre em contato com seu revendedor.",
+      message: "Seu login expirou ou está suspenso. Entre em contato com seu revendedor.",
       reseller: reseller ? {
         name: reseller.name,
         token: reseller.resellerToken || ""
@@ -563,7 +568,7 @@ app.get("/api/admin/stats", (req, res) => {
     
     const now = new Date();
     const activeClients = clients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
-    const expiredClients = clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status === "expired").length;
+    const expiredClients = clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status === "expired" || c.status === "suspended" || c.status === "blocked").length;
 
     return res.json({
       success: true,
