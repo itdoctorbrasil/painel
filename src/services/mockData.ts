@@ -128,7 +128,7 @@ export const APP_PRESETS: AppPreset[] = [
     name: "Netflix TV",
     packageName: "com.netflix.ninja",
     iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/netflix.png",
-    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/settings.apk"
+    deepLink: ""
   },
   {
     name: "Prime Video",
