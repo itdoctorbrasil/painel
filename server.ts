@@ -61,7 +61,7 @@ const initialDb = {
         { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
         { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
         { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneingradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/settings.png", deepLink: "" }
+        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "" }
       ],
       updatedAt: new Date().toISOString()
     }
