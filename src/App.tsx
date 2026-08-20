@@ -200,7 +200,7 @@ export default function App() {
               LUNA <span className="text-indigo-400">LAUNCHER</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Painel Web Multitenant (SaaS / White-Label) para Android IPTV
+              Painel Luna Launcher
             </p>
           </div>
 
@@ -263,7 +263,7 @@ export default function App() {
           </div>
 
           <p className="text-center text-[11px] text-slate-500 mt-6">
-            Luna Launcher IPTV SaaS v2.1.0 • Sistema Multi-Inquilino Seguro
+            Luna Launcher Painel
           </p>
         </div>
       </div>
