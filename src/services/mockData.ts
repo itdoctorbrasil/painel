@@ -122,7 +122,7 @@ export const APP_PRESETS: AppPreset[] = [
     name: "Settings",
     packageName: "com.android.tv.settings",
     iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png",
-    deepLink: ""
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/settings.apk"
   },
   {
     name: "Netflix TV",
