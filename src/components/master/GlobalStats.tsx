@@ -39,7 +39,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
     return (
       <div className="p-8 text-center text-slate-400">
         <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
-        Carregando estatísticas globais...
+        Carregando dados Globais...
       </div>
     );
   }
@@ -64,13 +64,13 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
           <div>
             <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1.5 mb-2">
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-              Painel Master Admin • Solução White-Label
+              Painel Admin
             </span>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Gerenciamento Global Luna Launcher
+              Gerenciamento Luna Launcher
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl mt-1">
-              Controle a cadeia de revendedores, layouts dos dispositivos Android TV, clientes ativas/expiradas e atualizações de firmware OTA.
+              Controle a cadeia de revendedores, layouts dos dispositivos, clientes ativos e expiradas.
             </p>
           </div>
 
@@ -119,7 +119,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
             </div>
           </div>
           <div className="text-3xl font-black text-white">{totalClients}</div>
-          <p className="text-xs text-slate-400 mt-1">Dispositivos/TV Boxes cadastrados</p>
+          <p className="text-xs text-slate-400 mt-1">TV Boxes cadastrados</p>
         </div>
 
         {/* Clientes Ativos */}
