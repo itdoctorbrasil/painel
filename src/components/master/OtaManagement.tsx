@@ -79,7 +79,7 @@ export const OtaManagement: React.FC<OtaManagementProps> = ({
             Módulo OTA • Gerenciador de Atualizações
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
-            Controle a distribuição do APK do Luna Launcher em tempo real. O app Android consome automaticamente este arquivo <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-300 font-mono">version.json</code> para notificar ou forçar a atualização nas TVs Box dos clientes.
+            Controle a distribuição do APK do Luna Launcher <code className="bg-black/40 px-1.5 py-0.5 rounded text-purple-300 font-mono">version.json</code>.
           </p>
         </div>
 
