@@ -32,6 +32,9 @@ const defaultApps = [
   { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "" }
 ];
 
+// DATA DE VALIDADE VITALÍCIA / LONGA DURAÇÃO (ANO 2030)
+const farFutureDate = new Date(Date.now() + 365 * 4 * 86400000).toISOString();
+
 const initialDb = {
   users: [
     {
@@ -77,7 +80,33 @@ const initialDb = {
       updatedAt: new Date().toISOString()
     }
   ],
-  clients: [],
+  // CLIENTES FIXOS GARANTIDOS E ATIVOS:
+  clients: [
+    {
+      id: "cli_hightv_wlan",
+      resellerId: "usr_rev_1",
+      clientName: "HIGHTV UP+ (WLAN)",
+      macAddress: "84:B4:D2:33:D4:D8",
+      deviceToken: "84:B4:D2:33:D4:D8",
+      expirationDate: farFutureDate,
+      status: "active",
+      notes: "Ativo e liberado",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "cli_hightv_lan",
+      resellerId: "usr_rev_1",
+      clientName: "HIGHTV UP+ (ETH0)",
+      macAddress: "9C:00:D3:6F:F8:F0",
+      deviceToken: "9C:00:D3:6F:F8:F0",
+      expirationDate: farFutureDate,
+      status: "active",
+      notes: "Ativo e liberado",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    }
+  ],
   otaVersion: {
     id: "ota_v210",
     versionCode: 3,
@@ -100,8 +129,18 @@ class DB {
       try {
         const raw = fs.readFileSync(DB_FILE, "utf-8");
         this.data = JSON.parse(raw);
+
+        // Garante a existência dos arrays essenciais
         if (!this.data.clients || !Array.isArray(this.data.clients)) {
-          this.data.clients = [];
+          this.data.clients = initialDb.clients;
+        } else {
+          // Garante que os MACs da HIGHTV estejam sempre presentes como ATIVOS
+          for (const initCli of initialDb.clients) {
+            const exists = this.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanHex(initCli.macAddress));
+            if (!exists) {
+              this.data.clients.unshift(initCli);
+            }
+          }
         }
       } catch (err) {
         this.data = initialDb;
@@ -176,27 +215,23 @@ function normalizeResellerId(id?: string): string {
   return id;
 }
 
-function cleanHex(str: string): string {
+function cleanHex(str: any): string {
   if (!str) return "";
   return str.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 /**
- * Resolução com limpeza rigorosa de caracteres
+ * Resolução com identificação rigorosa
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
-
-  console.log(`\n========================================`);
-  console.log(`[API RESOLVE] Req MAC: "${cleanMac}" | Token: "${cleanToken}"`);
 
   let reseller: any = null;
   if (cleanToken.length > 0) {
     reseller = (db.data.users || []).find((u: any) => cleanHex(u.resellerToken) === cleanToken);
   }
 
-  // Busca o Cliente por qualquer equivalência de MAC limpo
   let client: any = null;
   if (cleanMac.length >= 6) {
     const matches = (db.data.clients || []).filter((c: any) => {
@@ -207,11 +242,10 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
-      // Dá prioridade absoluta ao registro com status active e validade vigente
+      // Dá prioridade total a quem estiver ATIVO e com data em dia
       client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
-      console.log(`[API MATCH] Encontrado: "${client.clientName}" | Status: ${client.status} | Expira: ${client.expirationDate}`);
     }
   }
 
@@ -222,7 +256,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Auto-registro se não existir nenhum cliente cadastrado para este MAC
+  // Se não existir, auto-registra como pendente
   if (!client && cleanMac.length >= 6) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
@@ -243,7 +277,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (!db.data.clients) db.data.clients = [];
     db.data.clients.unshift(client);
     db.save();
-    console.log(`[API AUTO-REGISTER] Registrado pendente: ${formattedMac}`);
   }
 
   let isExpired = false;
@@ -263,7 +296,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
         db.save();
       }
     } else {
-      // ATIVO E LIBERADO
+      // ATIVO E LIBERADO!
       isExpired = false;
       isNewClient = false;
     }
@@ -275,9 +308,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const targetId = normalizeResellerId(reseller?.id);
   let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
   if (!layout) layout = (db.data.layouts || [])[0] || initialDb.layouts[0];
-
-  console.log(`[API RESULTADO] isExpired: ${isExpired} | isNewClient: ${isNewClient}`);
-  console.log(`========================================\n`);
 
   return { client, reseller, layout, isExpired, isNewClient };
 }
@@ -428,7 +458,7 @@ app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
 // -------------------------------------------------------------
-// ENDPOINTS ADMIN DO PAINEL
+// ENDPOINTS ADMIN
 // -------------------------------------------------------------
 app.get("/api/reseller/clients", (req, res) => {
   disableCache(res);
@@ -477,7 +507,6 @@ app.post("/api/reseller/clients", (req, res) => {
     if (resellerId) client.resellerId = resellerId;
 
     db.save();
-    console.log(`[PAINEL ADMIN] Cliente "${client.clientName}" atualizado para ATIVO com sucesso.`);
     return res.json(client);
   } else {
     const newClient = {
@@ -512,7 +541,6 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   client.status = "active";
 
   db.save();
-  console.log(`[PAINEL ADMIN] Renovação do cliente "${client.clientName}" aplicada (+${addDays}d).`);
   return res.json(client);
 });
 
