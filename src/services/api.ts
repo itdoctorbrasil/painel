@@ -7,11 +7,7 @@ import {
   LauncherVersionResponse 
 } from '../types';
 
-// Se o frontend for servido pelo próprio Node no Render, usamos caminho relativo.
-// Caso contrário, usamos o domínio padrão do backend.
-const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? '' 
-  : 'https://painel-ayxi.onrender.com';
+const API_BASE = '';
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
@@ -31,7 +27,6 @@ export async function loginApi(email: string, password: string) {
   return res.json();
 }
 
-// Master Admin APIs
 export async function getResellersApi(): Promise<(User & { totalClients: number; activeClients: number })[]> {
   const res = await fetch(`${API_BASE}/api/admin/resellers`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Erro ao carregar revendedores');
@@ -85,7 +80,6 @@ export async function saveOtaVersionApi(data: Partial<OtaVersion>) {
   return res.json();
 }
 
-// Reseller / Layout APIs
 export async function getLayoutApi(resellerId: string): Promise<AppLayout> {
   const res = await fetch(`${API_BASE}/api/reseller/layout/${resellerId}`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Erro ao carregar layout');
@@ -105,7 +99,6 @@ export async function saveLayoutApi(layout: Partial<AppLayout>) {
   return res.json();
 }
 
-// Client Management APIs
 export async function getClientsApi(resellerId?: string): Promise<ClientDevice[]> {
   const url = resellerId ? `${API_BASE}/api/reseller/clients?resellerId=${resellerId}` : `${API_BASE}/api/reseller/clients`;
   const res = await fetch(url, { headers: defaultHeaders });
@@ -117,7 +110,10 @@ export async function saveClientApi(clientData: any) {
   const res = await fetch(`${API_BASE}/api/reseller/clients`, {
     method: 'POST',
     headers: defaultHeaders,
-    body: JSON.stringify(clientData)
+    body: JSON.stringify({
+      ...clientData,
+      status: clientData.status || 'active'
+    })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -126,11 +122,11 @@ export async function saveClientApi(clientData: any) {
   return res.json();
 }
 
-export async function renewClientApi(id: string, days: number) {
+export async function renewClientApi(id: string, days: number, macAddress?: string) {
   const res = await fetch(`${API_BASE}/api/reseller/clients/renew`, {
     method: 'POST',
     headers: defaultHeaders,
-    body: JSON.stringify({ id, days })
+    body: JSON.stringify({ id, days, macAddress })
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -148,7 +144,6 @@ export async function deleteClientApi(id: string) {
   return res.json();
 }
 
-// Launcher Direct Endpoints
 export async function fetchLauncherConfig(token: string): Promise<LauncherConfigResponse> {
   const res = await fetch(`${API_BASE}/api/v1/launcher/config?token=${encodeURIComponent(token)}`, { headers: defaultHeaders });
   return res.json();
