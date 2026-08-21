@@ -47,27 +47,46 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // Form states
+  // Calcula a data padrão para 30 dias à frente
+  const getDefaultExpiration = (days: number = 30) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  };
+
+  // Form states com suporte ao calendário (expirationDate)
   const [formData, setFormData] = useState({
     id: '',
     resellerId: targetResellerId,
     clientName: '',
     macAddress: '',
     deviceToken: '',
-    durationDays: 30, // Default 30 days
+    expirationDate: getDefaultExpiration(30),
     status: 'active' as 'active' | 'suspended' | 'expired',
     notes: ''
   });
 
+  const handleQuickDaysSelect = (days: number) => {
+    const targetDate = new Date();
+    if (days === 9999) {
+      targetDate.setFullYear(targetDate.getFullYear() + 20); // Vitalício
+    } else {
+      targetDate.setDate(targetDate.getDate() + days);
+    }
+    setFormData(prev => ({
+      ...prev,
+      expirationDate: targetDate.toISOString().split('T')[0]
+    }));
+  };
+
   const openCreateModal = () => {
-    const randomMac = `AA:${Math.floor(10 + Math.random() * 89)}:${Math.floor(10 + Math.random() * 89)}:${Math.floor(10 + Math.random() * 89)}:${Math.floor(10 + Math.random() * 89)}:${Math.floor(10 + Math.random() * 89)}`;
     setFormData({
       id: '',
       resellerId: targetResellerId,
       clientName: '',
-      macAddress: randomMac,
-      deviceToken: `DEV-${randomMac.replace(/[^A-Z0-9]/g, '')}`,
-      durationDays: 30,
+      macAddress: '',
+      deviceToken: '',
+      expirationDate: getDefaultExpiration(30),
       status: 'active',
       notes: ''
     });
@@ -77,13 +96,17 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   };
 
   const openEditModal = (c: ClientDevice) => {
+    const currentExp = c.expirationDate 
+      ? new Date(c.expirationDate).toISOString().split('T')[0] 
+      : getDefaultExpiration(30);
+
     setFormData({
       id: c.id,
       resellerId: c.resellerId,
       clientName: c.clientName,
       macAddress: c.macAddress,
       deviceToken: c.deviceToken,
-      durationDays: 0, // Keep current expiration unless button clicked
+      expirationDate: currentExp,
       status: c.status,
       notes: c.notes || ''
     });
@@ -97,10 +120,22 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     setLoading(true);
     setError(null);
 
+    if (!formData.macAddress || !formData.macAddress.trim()) {
+      setError('O preenchimento do MAC Address é obrigatório para cadastrar o cliente.');
+      setLoading(false);
+      return;
+    }
+
+    const cleanMac = formData.macAddress.trim().toUpperCase();
+    const tokenToSave = formData.deviceToken.trim() || `DEV-${cleanMac.replace(/[^A-Z0-9]/g, '')}`;
+
     try {
       await onSaveClient({
         ...formData,
-        resellerId: targetResellerId
+        macAddress: cleanMac,
+        deviceToken: tokenToSave,
+        resellerId: targetResellerId,
+        expirationDate: new Date(formData.expirationDate).toISOString()
       });
       setIsModalOpen(false);
     } catch (err: any) {
@@ -139,14 +174,14 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
   // Filter logic
   const filtered = clients.filter(c => {
-    if (c.resellerId !== targetResellerId) return false;
+    if (c.resellerId !== targetResellerId && targetResellerId !== 'usr_master' && targetResellerId !== 'master') return false;
 
     const matchesSearch = 
       c.clientName.toLowerCase().includes(search.toLowerCase()) ||
       c.macAddress.toLowerCase().includes(search.toLowerCase()) ||
       c.deviceToken.toLowerCase().includes(search.toLowerCase());
 
-    const isExp = new Date(c.expirationDate) < new Date() || c.status === 'expired';
+    const isExp = new Date(c.expirationDate) < new Date() || c.status === 'expired' || c.status === 'suspended';
     
     if (statusFilter === 'active') return matchesSearch && !isExp && c.status === 'active';
     if (statusFilter === 'expired') return matchesSearch && isExp;
@@ -199,7 +234,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
               statusFilter === 'all' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Todos ({clients.filter(c => c.resellerId === targetResellerId).length})
+            Todos ({clients.filter(c => targetResellerId === 'usr_master' || targetResellerId === 'master' || c.resellerId === targetResellerId).length})
           </button>
           <button
             onClick={() => setStatusFilter('active')}
@@ -226,7 +261,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
           const expDate = new Date(c.expirationDate);
           const now = new Date();
           const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          const isExpired = diffDays <= 0 || c.status === 'expired';
+          const isExpired = diffDays <= 0 || c.status === 'expired' || c.status === 'suspended';
           const isExpiringSoon = diffDays > 0 && diffDays <= 5;
 
           return (
@@ -249,13 +284,15 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </div>
                   
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                    isExpired
+                    c.status === 'suspended'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : isExpired
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                       : isExpiringSoon
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                       : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                   }`}>
-                    {isExpired ? 'Expirado' : isExpiringSoon ? `Vence em ${diffDays}d` : 'Ativo'}
+                    {c.status === 'suspended' ? 'Suspenso' : isExpired ? 'Expirado' : isExpiringSoon ? `Vence em ${diffDays}d` : 'Ativo'}
                   </span>
                 </div>
 
@@ -291,7 +328,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   )}
                 </div>
 
-                {/* Quick Renewal Buttons Required by Prompt (30d, 90d, 180d, 365d, Vitalício) */}
+                {/* Quick Renewal Buttons */}
                 <div className="mb-4">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1.5">
                     ⚡ Renovação Rápida de Validade:
@@ -424,9 +461,9 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 </div>
               </div>
 
-              {/* Quick Validade Select Buttons Required by Prompt Section 2.B */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-2">
+              {/* Seletor de Validade: Botões Rápidos + Campo Calendário */}
+              <div className="space-y-2.5">
+                <label className="block text-slate-300 font-semibold">
                   Validade do Plano (Seleção de Botões Rápidos):
                 </label>
                 <div className="grid grid-cols-5 gap-2">
@@ -440,16 +477,26 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     <button
                       key={p.days}
                       type="button"
-                      onClick={() => setFormData({ ...formData, durationDays: p.days })}
-                      className={`p-2 rounded-xl border text-xs font-bold transition text-center ${
-                        formData.durationDays === p.days
-                          ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg'
-                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
-                      }`}
+                      onClick={() => handleQuickDaysSelect(p.days)}
+                      className="p-2 rounded-xl border text-xs font-bold transition text-center bg-slate-950 text-slate-300 border-slate-800 hover:border-indigo-500 hover:text-white"
                     >
                       {p.label}
                     </button>
                   ))}
+                </div>
+
+                {/* Input de Data / Calendário */}
+                <div className="pt-1">
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Ou determine a data exata no calendário:
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.expirationDate}
+                    onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 [color-scheme:dark]"
+                  />
                 </div>
               </div>
 
