@@ -161,7 +161,7 @@ function normalizeResellerId(id?: string): string {
 }
 
 /**
- * Resolução com identificação estrita por MAC
+ * Resolução com identificação estrita por MAC e priorização de status Ativo
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawMac = (macInput || "").trim().toUpperCase();
@@ -170,30 +170,36 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const rawToken = (tokenInput || "").trim().toUpperCase();
   const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
 
-  // 1. Identifica a qual Revendedor pertence a requisição através do token
   let reseller: any = null;
   if (cleanToken.length > 0) {
-    reseller = db.data.users.find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
+    reseller = (db.data.users || []).find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
   }
 
-  // 2. Busca estrita do Dispositivo pelo MAC Address
   let client: any = null;
   if (cleanMac.length > 0) {
-    client = (db.data.clients || []).find((c: any) => {
+    const matching = (db.data.clients || []).filter((c: any) => {
       const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-      return cMacClean.length > 0 && cMacClean === cleanMac;
+      const cTokClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return (cMacClean.length > 0 && cMacClean === cleanMac) || (cTokClean.length > 0 && cTokClean === cleanMac);
     });
+
+    if (matching.length > 0) {
+      // Prioriza sempre o registro ativo com validade válida
+      const now = new Date();
+      client = matching.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
+               matching.find((c: any) => c.status === "active") ||
+               matching[0];
+    }
   }
 
-  // Se o cliente existe, associa o revendedor dele
   if (!reseller && client) {
-    reseller = db.data.users.find((u: any) => u.id === client.resellerId);
+    reseller = (db.data.users || []).find((u: any) => u.id === client.resellerId);
   }
   if (!reseller) {
-    reseller = db.data.users.find((u: any) => u.id === "usr_master") || db.data.users[0];
+    reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // 3. Auto-registro se for um dispositivo novo com MAC não cadastrado
+  // Auto-registro se não existir nenhum cliente cadastrado para este MAC
   if (!client && cleanMac.length >= 6) {
     const formattedMac = rawMac.includes(":") 
       ? rawMac 
@@ -207,8 +213,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       clientName: `Novo Aparelho (${shortId})`,
       macAddress: formattedMac,
       deviceToken: formattedMac,
-      expirationDate: new Date().toISOString(), // Vencido no momento do registro
-      status: "pending",                       // Aguardando liberação no painel
+      expirationDate: new Date().toISOString(),
+      status: "pending",
       notes: "Auto-registrado via TV Box. Aguardando aprovação.",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
@@ -217,8 +223,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (!db.data.clients) db.data.clients = [];
     db.data.clients.unshift(client);
     db.save();
-
-    console.log(`[AUTO-REGISTRO] Novo dispositivo: MAC ${formattedMac} vinculado a ${reseller.name}`);
   }
 
   let isExpired = false;
@@ -228,13 +232,10 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    // Novo cliente pendente
     if (client.status === "pending") {
       isNewClient = true;
       isExpired = true;
-    }
-    // Suspenso, Bloqueado ou Data de Validade Vencida
-    else if (client.status === "suspended" || client.status === "expired" || client.status !== "active" || expDate < now) {
+    } else if (client.status === "suspended" || client.status === "expired" || client.status !== "active" || expDate < now) {
       isExpired = true;
       if (client.status === "active" && expDate < now) {
         client.status = "expired";
@@ -474,16 +475,21 @@ app.post("/api/reseller/clients", (req, res) => {
     finalExpDate = new Date(Date.now() + 30 * 86400000);
   }
 
-  if (id) {
-    const client = db.data.clients.find((c: any) => c.id === id);
-    if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
+  const cleanMacDigits = cleanMac.replace(/[^A-Z0-9]/g, "");
 
+  // Se já existir registro para este MAC, atualiza o existente para evitar duplicações
+  let client = id 
+    ? db.data.clients.find((c: any) => c.id === id)
+    : db.data.clients.find((c: any) => (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanMacDigits);
+
+  if (client) {
     client.clientName = clientName;
     if (cleanMac) client.macAddress = cleanMac;
     client.deviceToken = cleanToken || cleanMac;
     client.expirationDate = finalExpDate.toISOString();
-    if (status) client.status = status;
+    client.status = status || "active";
     if (notes !== undefined) client.notes = notes;
+    if (resellerId) client.resellerId = resellerId;
 
     db.save();
     return res.json(client);
@@ -501,7 +507,7 @@ app.post("/api/reseller/clients", (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    db.data.clients.push(newClient);
+    db.data.clients.unshift(newClient);
     db.save();
     return res.status(201).json(newClient);
   }
