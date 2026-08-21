@@ -164,17 +164,22 @@ function normalizeResellerId(id?: string): string {
   return id;
 }
 
+/**
+ * Resolução Multi-Tenant isolada por Token e MAC
+ */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   db.reload();
 
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
 
+  // 1. Identifica a Revenda dona da requisição através do Token
   let reseller: any = null;
   if (cleanToken.length > 0) {
     reseller = (db.data.users || []).find((u: any) => cleanHex(u.resellerToken) === cleanToken);
   }
 
+  // 2. Busca o Cliente por MAC
   let client: any = null;
   if (cleanMac.length >= 4) {
     const matches = (db.data.clients || []).filter((c: any) => {
@@ -185,28 +190,28 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
-      // Prioridade absoluta: registro com data futura que não esteja suspenso
       client = matches.find((c: any) => new Date(c.expirationDate) > now && c.status !== "suspended") ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
     }
   }
 
+  // Se o cliente existe mas a requisição não enviou token, herda o revendedor do cliente
   if (!reseller && client) {
     reseller = (db.data.users || []).find((u: any) => u.id === client.resellerId);
   }
   if (!reseller) {
-    reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
+    reseller = (db.data.users || []).find((u: any) => u.id === "usr_rev_1") || db.data.users[0];
   }
 
-  // Auto-registro como pendente se não existir nenhum registro prévio
+  // 3. Auto-registro vinculado estritamente à revenda identificada
   if (!client && cleanMac.length >= 4) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
 
     client = {
       id: "cli_" + Date.now(),
-      resellerId: reseller ? reseller.id : "usr_master",
+      resellerId: reseller ? reseller.id : "usr_rev_1",
       clientName: `Novo Aparelho (${shortId})`,
       macAddress: formattedMac,
       deviceToken: formattedMac,
@@ -229,7 +234,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    // REGRA DE DESBLOQUEIO: Se a validade é futura e não está suspenso, LIBERA o acesso
     if (expDate > now && client.status !== "suspended") {
       if (client.status === "pending") {
         client.status = "active";
@@ -254,7 +258,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     isExpired = true;
   }
 
-  const targetId = normalizeResellerId(reseller?.id);
+  // Entrega o layout customizado e exclusivo do revendedor vinculado
+  const targetId = reseller ? reseller.id : "usr_master";
   let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
   if (!layout) layout = (db.data.layouts || [])[0] || initialDb.layouts[0];
 
@@ -266,18 +271,6 @@ function extractDeviceCredentials(req: express.Request) {
   const rawToken = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   return { mac: rawMac, token: rawToken };
 }
-
-// -------------------------------------------------------------
-// ROTA DE DIAGNÓSTICO DIRETO DO BANCO (DEBUG)
-// -------------------------------------------------------------
-app.get("/api/debug/clients", (req, res) => {
-  disableCache(res);
-  db.reload();
-  return res.json({
-    total: db.data.clients?.length || 0,
-    clients: db.data.clients || []
-  });
-});
 
 // -------------------------------------------------------------
 // ENDPOINTS PÚBLICOS DO LAUNCHER
@@ -411,7 +404,101 @@ app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
 // -------------------------------------------------------------
-// ENDPOINTS ADMIN
+// ENDPOINTS ADMIN (GESTÃO DE REVENDEDORES)
+// -------------------------------------------------------------
+app.get("/api/admin/resellers", (req, res) => {
+  disableCache(res);
+  db.reload();
+  const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
+  const now = new Date();
+
+  return res.json(resellers.map((r: any) => {
+    const myClients = (db.data.clients || []).filter((c: any) => c.resellerId === r.id);
+    const activeClients = myClients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
+    return {
+      ...r,
+      totalClients: myClients.length,
+      activeClients
+    };
+  }));
+});
+
+app.post("/api/admin/resellers", (req, res) => {
+  db.reload();
+  const { id, name, email, password, resellerToken, clientLimit, status } = req.body;
+
+  if (!name || !email) {
+    return res.status(400).json({ message: "Nome e Email são obrigatórios." });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (id) {
+    const user = (db.data.users || []).find((u: any) => u.id === id);
+    if (!user) return res.status(404).json({ message: "Revendedor não encontrado." });
+
+    user.name = name;
+    user.email = cleanEmail;
+    if (password && password.trim().length > 0) user.password = password.trim();
+    if (resellerToken) user.resellerToken = resellerToken.trim().toUpperCase();
+    if (clientLimit !== undefined) user.clientLimit = Number(clientLimit);
+    if (status) user.status = status;
+
+    db.save();
+    return res.json(user);
+  } else {
+    // Validação de email duplicado
+    if ((db.data.users || []).some((u: any) => u.email.trim().toLowerCase() === cleanEmail)) {
+      return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
+    }
+
+    const newResellerId = "usr_rev_" + Date.now();
+    const token = resellerToken ? resellerToken.trim().toUpperCase() : `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    const newReseller = {
+      id: newResellerId,
+      name,
+      email: cleanEmail,
+      password: password ? password.trim() : "revenda123password",
+      role: "reseller",
+      resellerToken: token,
+      clientLimit: Number(clientLimit || 50),
+      status: status || "active",
+      createdAt: new Date().toISOString()
+    };
+
+    if (!db.data.users) db.data.users = [];
+    db.data.users.push(newReseller);
+
+    // Cria automaticamente um layout exclusivo para este novo revendedor
+    if (!db.data.layouts) db.data.layouts = [];
+    db.data.layouts.push({
+      id: "lay_" + newResellerId,
+      resellerId: newResellerId,
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps,
+      updatedAt: new Date().toISOString()
+    });
+
+    db.save();
+    console.log(`[ADMIN] Novo Revendedor criado com sucesso: ${newReseller.name} (Token: ${newReseller.resellerToken})`);
+    return res.status(201).json(newReseller);
+  }
+});
+
+app.delete("/api/admin/resellers/:id", (req, res) => {
+  db.reload();
+  const { id } = req.params;
+  db.data.users = (db.data.users || []).filter((u: any) => u.id !== id);
+  db.data.layouts = (db.data.layouts || []).filter((l: any) => l.resellerId !== id && l.id !== `lay_${id}`);
+  db.save();
+  return res.json({ status: "success" });
+});
+
+// -------------------------------------------------------------
+// GESTÃO DE CLIENTES (FILTRAGEM POR REVENDA)
 // -------------------------------------------------------------
 app.get("/api/reseller/clients", (req, res) => {
   disableCache(res);
@@ -481,7 +568,6 @@ app.post("/api/reseller/clients", (req, res) => {
   }
 });
 
-// RENOVAÇÃO INTELIGENTE (Busca por ID ou por MAC)
 app.post("/api/reseller/clients/renew", (req, res) => {
   db.reload();
   const { id, macAddress, days } = req.body;
@@ -504,7 +590,6 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   client.status = "active";
 
   db.save();
-  console.log(`[RENOVAÇÃO APLICADA] Cliente "${client.clientName}" (${client.macAddress}) -> Ativo até ${client.expirationDate}`);
   return res.json(client);
 });
 
@@ -516,6 +601,56 @@ app.delete("/api/reseller/clients/:id", (req, res) => {
   return res.json({ status: "success" });
 });
 
+// -------------------------------------------------------------
+// GESTÃO DE LAYOUTS INDIVIDUAIS POR REVENDA
+// -------------------------------------------------------------
+app.get("/api/reseller/layout/:resellerId", (req, res) => {
+  db.reload();
+  const targetId = req.params.resellerId;
+  let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
+
+  if (!layout) {
+    layout = {
+      id: "lay_" + targetId,
+      resellerId: targetId,
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps,
+      updatedAt: new Date().toISOString()
+    };
+    db.data.layouts.push(layout);
+    db.save();
+  }
+  return res.json(layout);
+});
+
+app.post("/api/reseller/layout", (req, res) => {
+  db.reload();
+  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
+  const targetId = resellerId || "usr_master";
+
+  const updatedLayout = {
+    id: "lay_" + targetId,
+    resellerId: targetId,
+    backgroundUrl: backgroundUrl || backgrounds?.[0] || defaultBackgrounds[0],
+    backgrounds: backgrounds || [backgroundUrl || defaultBackgrounds[0]],
+    overlayOpacity: Number(overlayOpacity ?? 0.35),
+    apps: Array.isArray(apps) ? apps : defaultApps,
+    updatedAt: new Date().toISOString()
+  };
+
+  const idx = (db.data.layouts || []).findIndex((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
+  if (idx !== -1) db.data.layouts[idx] = updatedLayout;
+  else db.data.layouts.push(updatedLayout);
+
+  db.save();
+  return res.json(updatedLayout);
+});
+
+// -------------------------------------------------------------
+// AUTENTICAÇÃO E ESTATÍSTICAS
+// -------------------------------------------------------------
 app.post("/api/auth/login", (req, res) => {
   db.reload();
   const { email, password } = req.body;
@@ -554,45 +689,25 @@ app.get("/api/admin/stats", (req, res) => {
   });
 });
 
-app.get("/api/admin/resellers", (req, res) => {
+app.get("/api/admin/ota", (req, res) => {
   db.reload();
-  const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
-  return res.json(resellers.map((r: any) => ({
-    ...r,
-    totalClients: (db.data.clients || []).filter((c: any) => c.resellerId === r.id).length,
-    activeClients: (db.data.clients || []).filter((c: any) => c.resellerId === r.id && new Date(c.expirationDate) > new Date() && c.status === "active").length
-  })));
+  return res.json(db.data.otaVersion || initialDb.otaVersion);
 });
 
-app.get("/api/reseller/layout/:resellerId", (req, res) => {
+app.post("/api/admin/ota", (req, res) => {
   db.reload();
-  const targetId = normalizeResellerId(req.params.resellerId);
-  let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
-  if (!layout) layout = db.data.layouts[0] || initialDb.layouts[0];
-  return res.json(layout);
-});
-
-app.post("/api/reseller/layout", (req, res) => {
-  db.reload();
-  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
-  const targetId = normalizeResellerId(resellerId);
-
-  const updatedLayout = {
-    id: "lay_" + targetId,
-    resellerId: targetId,
-    backgroundUrl: backgroundUrl || backgrounds?.[0] || initialDb.layouts[0].backgroundUrl,
-    backgrounds: backgrounds || [backgroundUrl || initialDb.layouts[0].backgroundUrl],
-    overlayOpacity: Number(overlayOpacity ?? 0.35),
-    apps: Array.isArray(apps) ? apps : initialDb.layouts[0].apps,
+  const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
+  db.data.otaVersion = {
+    ...db.data.otaVersion,
+    versionCode: Number(versionCode || db.data.otaVersion.versionCode),
+    versionName: versionName || db.data.otaVersion.versionName,
+    downloadUrl: downloadUrl || db.data.otaVersion.downloadUrl,
+    forceUpdate: Boolean(forceUpdate),
+    releaseNotes: releaseNotes || db.data.otaVersion.releaseNotes,
     updatedAt: new Date().toISOString()
   };
-
-  const idx = (db.data.layouts || []).findIndex((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
-  if (idx !== -1) db.data.layouts[idx] = updatedLayout;
-  else db.data.layouts.push(updatedLayout);
-
   db.save();
-  return res.json(updatedLayout);
+  return res.json(db.data.otaVersion);
 });
 
 async function startServer() {
