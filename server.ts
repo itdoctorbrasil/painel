@@ -185,8 +185,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
-      // Prioridade absoluta: registro ATIVO com validade futura
-      client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
+      // Prioridade absoluta: registro com data futura que não esteja suspenso
+      client = matches.find((c: any) => new Date(c.expirationDate) > now && c.status !== "suspended") ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
     }
@@ -199,7 +199,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Auto-registro como pendente
+  // Auto-registro como pendente se não existir nenhum registro prévio
   if (!client && cleanMac.length >= 4) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
@@ -229,16 +229,17 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     const now = new Date();
     const expDate = new Date(client.expirationDate);
 
-    if (client.status === "pending") {
-      isNewClient = true;
-      isExpired = true;
-    } else if (client.status === "active" && expDate > now) {
-      // 100% LIBERADO
+    // REGRA DE DESBLOQUEIO: Se a validade é futura e não está suspenso, LIBERA o acesso
+    if (expDate > now && client.status !== "suspended") {
+      if (client.status === "pending") {
+        client.status = "active";
+        db.save();
+      }
       isExpired = false;
       isNewClient = false;
     } else {
       isExpired = true;
-      isNewClient = false;
+      isNewClient = (client.status === "pending");
       if (client.status === "active" && expDate <= now) {
         client.status = "expired";
         db.save();
@@ -246,6 +247,10 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   } else {
     isNewClient = true;
+    isExpired = true;
+  }
+
+  if (reseller && reseller.status === "blocked") {
     isExpired = true;
   }
 
