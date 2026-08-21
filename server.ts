@@ -77,7 +77,7 @@ const initialDb = {
       updatedAt: new Date().toISOString()
     }
   ],
-  clients: [], // Inicia vazio
+  clients: [],
   otaVersion: {
     id: "ota_v210",
     versionCode: 3,
@@ -177,21 +177,26 @@ function normalizeResellerId(id?: string): string {
 }
 
 function cleanHex(str: string): string {
-  return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!str) return "";
+  return str.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 /**
- * Resolução com Auto-registro PENDENTE
+ * Resolução com limpeza rigorosa de caracteres
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
+
+  console.log(`\n========================================`);
+  console.log(`[API RESOLVE] Req MAC: "${cleanMac}" | Token: "${cleanToken}"`);
 
   let reseller: any = null;
   if (cleanToken.length > 0) {
     reseller = (db.data.users || []).find((u: any) => cleanHex(u.resellerToken) === cleanToken);
   }
 
+  // Busca o Cliente por qualquer equivalência de MAC limpo
   let client: any = null;
   if (cleanMac.length >= 6) {
     const matches = (db.data.clients || []).filter((c: any) => {
@@ -202,9 +207,11 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
+      // Dá prioridade absoluta ao registro com status active e validade vigente
       client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
+      console.log(`[API MATCH] Encontrado: "${client.clientName}" | Status: ${client.status} | Expira: ${client.expirationDate}`);
     }
   }
 
@@ -215,7 +222,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // AUTO-REGISTRO: Cria como PENDENTE e NÃO LIBERADO
+  // Auto-registro se não existir nenhum cliente cadastrado para este MAC
   if (!client && cleanMac.length >= 6) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
@@ -226,8 +233,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       clientName: `Novo Aparelho (${shortId})`,
       macAddress: formattedMac,
       deviceToken: formattedMac,
-      expirationDate: new Date().toISOString(), // Vencido no ato
-      status: "pending",                       // PENDENTE
+      expirationDate: new Date().toISOString(),
+      status: "pending",
       notes: "Auto-registrado via TV Box. Aguardando aprovação.",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
@@ -236,7 +243,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (!db.data.clients) db.data.clients = [];
     db.data.clients.unshift(client);
     db.save();
-    console.log(`[AUTO-REGISTRO] Dispositivo ${formattedMac} inserido como PENDENTE.`);
+    console.log(`[API AUTO-REGISTER] Registrado pendente: ${formattedMac}`);
   }
 
   let isExpired = false;
@@ -249,14 +256,14 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (client.status === "pending") {
       isNewClient = true;
       isExpired = true;
-    } else if (client.status === "suspended" || client.status === "expired" || client.status !== "active" || expDate < now) {
+    } else if (client.status === "suspended" || client.status === "expired" || client.status !== "active" || expDate <= now) {
       isExpired = true;
-      if (client.status === "active" && expDate < now) {
+      if (client.status === "active" && expDate <= now) {
         client.status = "expired";
         db.save();
       }
     } else {
-      // Ativo e validade ok
+      // ATIVO E LIBERADO
       isExpired = false;
       isNewClient = false;
     }
@@ -268,6 +275,9 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const targetId = normalizeResellerId(reseller?.id);
   let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
   if (!layout) layout = (db.data.layouts || [])[0] || initialDb.layouts[0];
+
+  console.log(`[API RESULTADO] isExpired: ${isExpired} | isNewClient: ${isNewClient}`);
+  console.log(`========================================\n`);
 
   return { client, reseller, layout, isExpired, isNewClient };
 }
@@ -418,7 +428,7 @@ app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
 // -------------------------------------------------------------
-// ENDPOINTS ADMIN
+// ENDPOINTS ADMIN DO PAINEL
 // -------------------------------------------------------------
 app.get("/api/reseller/clients", (req, res) => {
   disableCache(res);
@@ -435,9 +445,8 @@ app.get("/api/reseller/clients", (req, res) => {
 app.post("/api/reseller/clients", (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
-  const rawMac = (macAddress || "").trim();
-  const cleanMac = cleanHex(rawMac);
-  const formattedMac = rawMac.includes(":") ? rawMac.toUpperCase() : (cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac);
+  const cleanMac = cleanHex(macAddress);
+  const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
 
   if (!clientName || cleanMac.length < 6) {
     return res.status(400).json({ message: "Nome do Cliente e MAC Address válido são obrigatórios." });
@@ -461,13 +470,14 @@ app.post("/api/reseller/clients", (req, res) => {
   if (client) {
     client.clientName = clientName;
     client.macAddress = formattedMac;
-    client.deviceToken = deviceToken ? deviceToken.trim() : formattedMac;
+    client.deviceToken = formattedMac;
     client.expirationDate = finalExpDate.toISOString();
     client.status = status || "active";
     if (notes !== undefined) client.notes = notes;
     if (resellerId) client.resellerId = resellerId;
 
     db.save();
+    console.log(`[PAINEL ADMIN] Cliente "${client.clientName}" atualizado para ATIVO com sucesso.`);
     return res.json(client);
   } else {
     const newClient = {
@@ -475,7 +485,7 @@ app.post("/api/reseller/clients", (req, res) => {
       resellerId: resellerId || "usr_rev_1",
       clientName,
       macAddress: formattedMac,
-      deviceToken: deviceToken ? deviceToken.trim() : formattedMac,
+      deviceToken: formattedMac,
       expirationDate: finalExpDate.toISOString(),
       status: status || "active",
       notes: notes || "",
@@ -502,6 +512,7 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   client.status = "active";
 
   db.save();
+  console.log(`[PAINEL ADMIN] Renovação do cliente "${client.clientName}" aplicada (+${addDays}d).`);
   return res.json(client);
 });
 
@@ -597,7 +608,7 @@ async function startServer() {
     app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
   }
 
-  app.listen(PORT, () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
+  app.listen(PORT, () => console.log(`🚀 Servidor Luna Launcher Admin executando na porta ${PORT}`));
 }
 
 startServer();
