@@ -73,9 +73,9 @@ const initialDb = {
     {
       id: "cli_101",
       resellerId: "usr_rev_1",
-      clientName: "João Silva - TV Sala",
-      macAddress: "AA:BB:CC:11:22:33",
-      deviceToken: "DEV-AABBCC112233",
+      clientName: "HIGHTV",
+      macAddress: "9C:00:D3:6F:F8:F0",
+      deviceToken: "REV-VIP-8822",
       expirationDate: new Date(Date.now() + 60 * 86400000).toISOString(),
       status: "active",
       notes: "Cliente mensal em dia",
