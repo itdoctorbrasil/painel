@@ -428,7 +428,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ex: João Silva - TV Sala"
+                  placeholder="HIGHTV"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
@@ -441,7 +441,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="AA:BB:CC:11:22:33"
+                    placeholder="9C:00:D3:6F:F8:F0"
                     value={formData.macAddress}
                     onChange={(e) => setFormData({ ...formData, macAddress: e.target.value.toUpperCase() })}
                     className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
@@ -453,7 +453,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="DEV-AABBCC112233"
+                    placeholder="REV-VIP-8822"
                     value={formData.deviceToken}
                     onChange={(e) => setFormData({ ...formData, deviceToken: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
