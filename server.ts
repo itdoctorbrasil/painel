@@ -15,6 +15,23 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+const defaultBackgrounds = [
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+];
+
+const defaultApps = [
+  { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
+  { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
+  { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
+  { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
+  { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "" }
+];
+
 const initialDb = {
   users: [
     {
@@ -44,34 +61,55 @@ const initialDb = {
     {
       id: "lay_usr_master",
       resellerId: "usr_master",
-      backgroundUrl: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
-      backgrounds: [
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-        "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
-      ],
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
-      apps: [
-        { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
-        { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
-        { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
-        { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-        { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "" }
-      ],
+      apps: defaultApps,
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "lay_usr_rev_1",
+      resellerId: "usr_rev_1",
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps,
       updatedAt: new Date().toISOString()
     }
   ],
-  clients: [],
+  clients: [
+    {
+      id: "cli_hightv_primary",
+      resellerId: "usr_rev_1",
+      clientName: "HIGHTV UP+",
+      macAddress: "84:B4:D2:33:D4:D8",
+      deviceToken: "84:B4:D2:33:D4:D8",
+      expirationDate: new Date(Date.now() + 365 * 86400000).toISOString(),
+      status: "active",
+      notes: "Ativo e liberado",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "cli_hightv_eth",
+      resellerId: "usr_rev_1",
+      clientName: "HIGHTV UP+ (ETH)",
+      macAddress: "9C:00:D3:6F:F8:F0",
+      deviceToken: "9C:00:D3:6F:F8:F0",
+      expirationDate: new Date(Date.now() + 365 * 86400000).toISOString(),
+      status: "active",
+      notes: "Ativo e liberado",
+      lastSeen: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    }
+  ],
   otaVersion: {
     id: "ota_v210",
     versionCode: 3,
     versionName: "1.0.3",
     downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
     forceUpdate: false,
-    releaseNotes: "• Novo motor de inicialização rápida\n• Melhorias na navegação com Controle Remoto D-Pad\n• Suporte a ícones em 4K Ultra HD\n• Correções de estabilidade no Android 12+",
+    releaseNotes: "• Estabilidade e inicialização imediata\n• Sincronização em tempo real",
     minSupportedVersion: 100,
     fileSizeBytes: 18450000,
     updatedAt: new Date().toISOString()
@@ -87,6 +125,9 @@ class DB {
       try {
         const raw = fs.readFileSync(DB_FILE, "utf-8");
         this.data = JSON.parse(raw);
+        if (!this.data.clients || !Array.isArray(this.data.clients)) {
+          this.data.clients = initialDb.clients;
+        }
       } catch (err) {
         this.data = initialDb;
         this.save();
@@ -160,35 +201,40 @@ function normalizeResellerId(id?: string): string {
   return id;
 }
 
+function cleanHex(str: string): string {
+  return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 /**
- * Resolução com identificação estrita por MAC e priorização de status Ativo
+ * Resolução com identificação infalível de MAC e Status
  */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
-  const rawMac = (macInput || "").trim().toUpperCase();
-  const cleanMac = rawMac.replace(/[^A-Z0-9]/g, "");
+  const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
+  const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
 
-  const rawToken = (tokenInput || "").trim().toUpperCase();
-  const cleanToken = rawToken.replace(/[^A-Z0-9]/g, "");
+  console.log(`[API RESOLVE] Consulta recebida - Clean MAC: "${cleanMac}" | Token: "${cleanToken}"`);
 
+  // 1. Identifica a Revenda
   let reseller: any = null;
   if (cleanToken.length > 0) {
-    reseller = (db.data.users || []).find((u: any) => (u.resellerToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanToken);
+    reseller = (db.data.users || []).find((u: any) => cleanHex(u.resellerToken) === cleanToken);
   }
 
+  // 2. Busca o Cliente pelo MAC limpo
   let client: any = null;
-  if (cleanMac.length > 0) {
-    const matching = (db.data.clients || []).filter((c: any) => {
-      const cMacClean = (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-      const cTokClean = (c.deviceToken || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-      return (cMacClean.length > 0 && cMacClean === cleanMac) || (cTokClean.length > 0 && cTokClean === cleanMac);
+  if (cleanMac.length >= 6) {
+    const matches = (db.data.clients || []).filter((c: any) => {
+      const cMac = cleanHex(c.macAddress);
+      const cTok = cleanHex(c.deviceToken);
+      return (cMac.length > 0 && cMac === cleanMac) || (cTok.length > 0 && cTok === cleanMac);
     });
 
-    if (matching.length > 0) {
-      // Prioriza sempre o registro ativo com validade válida
+    if (matches.length > 0) {
       const now = new Date();
-      client = matching.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
-               matching.find((c: any) => c.status === "active") ||
-               matching[0];
+      client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
+               matches.find((c: any) => c.status === "active") ||
+               matches[0];
+      console.log(`[API RESOLVE] Cliente encontrado: "${client.clientName}" | Status: ${client.status} | Expira: ${client.expirationDate}`);
     }
   }
 
@@ -199,17 +245,14 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Auto-registro se não existir nenhum cliente cadastrado para este MAC
+  // Auto-registro se realmente não existir
   if (!client && cleanMac.length >= 6) {
-    const formattedMac = rawMac.includes(":") 
-      ? rawMac 
-      : cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
-
+    const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
 
     client = {
       id: "cli_" + Date.now(),
-      resellerId: reseller.id,
+      resellerId: reseller ? reseller.id : "usr_master",
       clientName: `Novo Aparelho (${shortId})`,
       macAddress: formattedMac,
       deviceToken: formattedMac,
@@ -223,6 +266,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (!db.data.clients) db.data.clients = [];
     db.data.clients.unshift(client);
     db.save();
+    console.log(`[API RESOLVE] Novo cliente auto-registrado: MAC ${formattedMac}`);
   }
 
   let isExpired = false;
@@ -241,13 +285,13 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
         client.status = "expired";
         db.save();
       }
+    } else {
+      // Cliente Ativo e com Data Válida!
+      isExpired = false;
+      isNewClient = false;
     }
   } else {
     isNewClient = true;
-    isExpired = true;
-  }
-
-  if (reseller && reseller.status === "blocked") {
     isExpired = true;
   }
 
@@ -255,9 +299,10 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
 
   if (!layout) {
-    layout = db.data.layouts[0] || initialDb.layouts[0];
+    layout = (db.data.layouts || [])[0] || initialDb.layouts[0];
   }
 
+  console.log(`[API RESOLVE] Veredito -> isExpired: ${isExpired} | isNewClient: ${isNewClient}`);
   return { client, reseller, layout, isExpired, isNewClient };
 }
 
@@ -268,7 +313,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS DA API PÚBLICA PARA O LUNA LAUNCHER
+// ENDPOINTS PÚBLICOS DO LAUNCHER
 // -------------------------------------------------------------
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
@@ -280,7 +325,7 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
     return res.json({
       status: "expired",
       isExpired: true,
-      message: "Seu login expirou ou está suspenso. Entre em contato com seu revendedor.",
+      message: "Acesso bloqueado ou expirado. Entre em contato com seu revendedor.",
       total: 0,
       apps: []
     });
@@ -288,7 +333,7 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 
   recordApiLog(mac || token || "ANONYMOUS", req.path, req, "success", 200);
 
-  const formattedApps = (layout.apps || []).map((app: any, index: number) => ({
+  const formattedApps = (layout.apps || defaultApps).map((app: any, index: number) => ({
     id: app.id || `app_${index + 1}`,
     order: index,
     position: index,
@@ -349,9 +394,9 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
 
   const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
     ? layout.backgrounds 
-    : [layout.backgroundUrl];
+    : defaultBackgrounds;
 
-  const primaryUrl = imageList[0] || layout.backgroundUrl;
+  const primaryUrl = imageList[0];
 
   return res.json({
     status: "success",
@@ -360,8 +405,8 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
     img_url: primaryUrl,
     url: primaryUrl,
     image: primaryUrl,
-    overlayOpacity: layout.overlayOpacity,
-    opacity: layout.overlayOpacity,
+    overlayOpacity: layout.overlayOpacity ?? 0.35,
+    opacity: layout.overlayOpacity ?? 0.35,
     images: imageList,
     banners: imageList.map((url: string, index: number) => ({
       id: `banner_${index}_${Date.now()}`,
@@ -406,39 +451,6 @@ const handleVersionJson = (req: express.Request, res: express.Response) => {
 app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
-app.get("/api/v1/launcher/config", (req, res) => {
-  disableCache(res);
-  const { mac, token } = extractDeviceCredentials(req);
-  const { client, reseller, layout, isExpired, isNewClient } = resolveLayoutAndClient(mac, token);
-
-  if (isExpired) {
-    const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
-    return res.json({
-      status: "expired",
-      isExpired: true,
-      message: "Seu login expirou ou está suspenso. Entre em contato com seu revendedor.",
-      background: { url: blockedUrl, images: [blockedUrl], overlayOpacity: 0.0 },
-      banners: [{ id: "banner_expired", imageUrl: blockedUrl }],
-      apps: []
-    });
-  }
-
-  const imageList = (layout.backgrounds && layout.backgrounds.length > 0) ? layout.backgrounds : [layout.backgroundUrl];
-
-  return res.json({
-    status: "success",
-    isExpired: false,
-    reseller: { name: reseller.name, token: reseller.resellerToken || "" },
-    background: {
-      url: imageList[0] || layout.backgroundUrl,
-      images: imageList,
-      overlayOpacity: layout.overlayOpacity
-    },
-    banners: imageList.map((url: string, index: number) => ({ id: `banner_${index}`, imageUrl: url })),
-    apps: layout.apps
-  });
-});
-
 // -------------------------------------------------------------
 // ENDPOINTS DO PAINEL WEB
 // -------------------------------------------------------------
@@ -457,11 +469,12 @@ app.get("/api/reseller/clients", (req, res) => {
 app.post("/api/reseller/clients", (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
-  const cleanMac = (macAddress || "").trim().toUpperCase();
-  let cleanToken = (deviceToken || "").trim().toUpperCase();
+  const rawMac = (macAddress || "").trim();
+  const cleanMac = cleanHex(rawMac);
+  const formattedMac = rawMac.includes(":") ? rawMac.toUpperCase() : (cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac);
 
-  if (!clientName || (!cleanMac && !cleanToken)) {
-    return res.status(400).json({ message: "Nome do Cliente e MAC Address são obrigatórios." });
+  if (!clientName || cleanMac.length < 6) {
+    return res.status(400).json({ message: "Nome do Cliente e MAC Address válido são obrigatórios." });
   }
 
   if (!db.data.clients) db.data.clients = [];
@@ -475,31 +488,30 @@ app.post("/api/reseller/clients", (req, res) => {
     finalExpDate = new Date(Date.now() + 30 * 86400000);
   }
 
-  const cleanMacDigits = cleanMac.replace(/[^A-Z0-9]/g, "");
-
-  // Se já existir registro para este MAC, atualiza o existente para evitar duplicações
+  // Atualiza ou insere
   let client = id 
     ? db.data.clients.find((c: any) => c.id === id)
-    : db.data.clients.find((c: any) => (c.macAddress || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === cleanMacDigits);
+    : db.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanMac);
 
   if (client) {
     client.clientName = clientName;
-    if (cleanMac) client.macAddress = cleanMac;
-    client.deviceToken = cleanToken || cleanMac;
+    client.macAddress = formattedMac;
+    client.deviceToken = deviceToken ? deviceToken.trim() : formattedMac;
     client.expirationDate = finalExpDate.toISOString();
     client.status = status || "active";
     if (notes !== undefined) client.notes = notes;
     if (resellerId) client.resellerId = resellerId;
 
     db.save();
+    console.log(`[PAINEL ADMIN] Cliente ${client.clientName} atualizado com Sucesso (Status: ${client.status})`);
     return res.json(client);
   } else {
     const newClient = {
       id: "cli_" + Date.now(),
       resellerId: resellerId || "usr_rev_1",
       clientName,
-      macAddress: cleanMac,
-      deviceToken: cleanToken || cleanMac,
+      macAddress: formattedMac,
+      deviceToken: deviceToken ? deviceToken.trim() : formattedMac,
       expirationDate: finalExpDate.toISOString(),
       status: status || "active",
       notes: notes || "",
@@ -509,6 +521,7 @@ app.post("/api/reseller/clients", (req, res) => {
 
     db.data.clients.unshift(newClient);
     db.save();
+    console.log(`[PAINEL ADMIN] Novo cliente criado com Sucesso (MAC: ${formattedMac})`);
     return res.status(201).json(newClient);
   }
 });
