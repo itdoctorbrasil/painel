@@ -32,9 +32,6 @@ const defaultApps = [
   { id: 5, name: "Settings", packageName: "com.android.tv.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "" }
 ];
 
-// DATA DE VALIDADE VITALÍCIA / LONGA DURAÇÃO (ANO 2030)
-const farFutureDate = new Date(Date.now() + 365 * 4 * 86400000).toISOString();
-
 const initialDb = {
   users: [
     {
@@ -80,40 +77,14 @@ const initialDb = {
       updatedAt: new Date().toISOString()
     }
   ],
-  // CLIENTES FIXOS GARANTIDOS E ATIVOS:
-  clients: [
-    {
-      id: "cli_hightv_wlan",
-      resellerId: "usr_rev_1",
-      clientName: "HIGHTV UP+ (WLAN)",
-      macAddress: "84:B4:D2:33:D4:D8",
-      deviceToken: "84:B4:D2:33:D4:D8",
-      expirationDate: farFutureDate,
-      status: "active",
-      notes: "Ativo e liberado",
-      lastSeen: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "cli_hightv_lan",
-      resellerId: "usr_rev_1",
-      clientName: "HIGHTV UP+ (ETH0)",
-      macAddress: "9C:00:D3:6F:F8:F0",
-      deviceToken: "9C:00:D3:6F:F8:F0",
-      expirationDate: farFutureDate,
-      status: "active",
-      notes: "Ativo e liberado",
-      lastSeen: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    }
-  ],
+  clients: [],
   otaVersion: {
     id: "ota_v210",
     versionCode: 3,
     versionName: "1.0.3",
     downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
     forceUpdate: false,
-    releaseNotes: "• Inicialização e sincronização imediata",
+    releaseNotes: "• Estabilidade e sincronização em tempo real",
     minSupportedVersion: 100,
     fileSizeBytes: 18450000,
     updatedAt: new Date().toISOString()
@@ -125,23 +96,17 @@ class DB {
   data: any;
 
   constructor() {
+    this.reload();
+  }
+
+  reload() {
     if (fs.existsSync(DB_FILE)) {
       try {
         const raw = fs.readFileSync(DB_FILE, "utf-8");
         this.data = JSON.parse(raw);
-
-        // Garante a existência dos arrays essenciais
-        if (!this.data.clients || !Array.isArray(this.data.clients)) {
-          this.data.clients = initialDb.clients;
-        } else {
-          // Garante que os MACs da HIGHTV estejam sempre presentes como ATIVOS
-          for (const initCli of initialDb.clients) {
-            const exists = this.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanHex(initCli.macAddress));
-            if (!exists) {
-              this.data.clients.unshift(initCli);
-            }
-          }
-        }
+        if (!Array.isArray(this.data.clients)) this.data.clients = [];
+        if (!Array.isArray(this.data.users)) this.data.users = initialDb.users;
+        if (!Array.isArray(this.data.layouts)) this.data.layouts = initialDb.layouts;
       } catch (err) {
         this.data = initialDb;
         this.save();
@@ -181,25 +146,9 @@ app.options('*', (req, res) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-function recordApiLog(token: string, endpoint: string, req: express.Request, status: string, responseCode: number) {
-  try {
-    const newLog = {
-      id: "log_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-      token: token || "ANONYMOUS",
-      endpoint,
-      ip: (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1",
-      userAgent: req.headers["user-agent"] || "Unknown App",
-      timestamp: new Date().toISOString(),
-      status,
-      responseCode
-    };
-    if (!db.data.apiLogs) db.data.apiLogs = [];
-    db.data.apiLogs.unshift(newLog);
-    if (db.data.apiLogs.length > 200) {
-      db.data.apiLogs = db.data.apiLogs.slice(0, 200);
-    }
-    db.save();
-  } catch (_: any) {}
+function cleanHex(str: any): string {
+  if (!str) return "";
+  return str.toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 const disableCache = (res: express.Response) => {
@@ -215,15 +164,9 @@ function normalizeResellerId(id?: string): string {
   return id;
 }
 
-function cleanHex(str: any): string {
-  if (!str) return "";
-  return str.toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-/**
- * Resolução com identificação rigorosa
- */
 function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
+  db.reload();
+
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
 
@@ -233,7 +176,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   }
 
   let client: any = null;
-  if (cleanMac.length >= 6) {
+  if (cleanMac.length >= 4) {
+    // Procura qualquer cliente cujo MAC ou Token de ativação coincida com o valor limpo
     const matches = (db.data.clients || []).filter((c: any) => {
       const cMac = cleanHex(c.macAddress);
       const cTok = cleanHex(c.deviceToken);
@@ -242,7 +186,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
-      // Dá prioridade total a quem estiver ATIVO e com data em dia
+      // Dá preferência absoluta ao registro que estiver ATIVO com validade futura
       client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
@@ -256,8 +200,8 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Se não existir, auto-registra como pendente
-  if (!client && cleanMac.length >= 6) {
+  // Auto-registro somente se não existir absolutamente nenhum registro prévio
+  if (!client && cleanMac.length >= 4) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
 
@@ -269,7 +213,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       deviceToken: formattedMac,
       expirationDate: new Date().toISOString(),
       status: "pending",
-      notes: "Auto-registrado via TV Box. Aguardando aprovação.",
+      notes: "Auto-registrado via App. Aguardando aprovação.",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
@@ -289,16 +233,16 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (client.status === "pending") {
       isNewClient = true;
       isExpired = true;
-    } else if (client.status === "suspended" || client.status === "expired" || client.status !== "active" || expDate <= now) {
+    } else if (client.status === "active" && expDate > now) {
+      isExpired = false;
+      isNewClient = false;
+    } else {
       isExpired = true;
+      isNewClient = false;
       if (client.status === "active" && expDate <= now) {
         client.status = "expired";
         db.save();
       }
-    } else {
-      // ATIVO E LIBERADO!
-      isExpired = false;
-      isNewClient = false;
     }
   } else {
     isNewClient = true;
@@ -319,7 +263,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS
+// ENDPOINTS PÚBLICOS DO LAUNCHER
 // -------------------------------------------------------------
 const handleAppsJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
@@ -327,7 +271,6 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
   const { layout, isExpired } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
-    recordApiLog(mac || token || "ANONYMOUS", req.path, req, "expired", 200);
     return res.json({
       status: "expired",
       isExpired: true,
@@ -336,8 +279,6 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
       apps: []
     });
   }
-
-  recordApiLog(mac || token || "ANONYMOUS", req.path, req, "success", 200);
 
   const formattedApps = (layout.apps || defaultApps).map((app: any, index: number) => ({
     id: app.id || `app_${index + 1}`,
@@ -376,7 +317,6 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
   const { layout, isExpired, isNewClient } = resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
-    recordApiLog(mac || token || "ANONYMOUS", req.path, req, "expired", 200);
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
 
     return res.json({
@@ -395,8 +335,6 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
       ]
     });
   }
-
-  recordApiLog(mac || token || "ANONYMOUS", req.path, req, "success", 200);
 
   const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
     ? layout.backgrounds 
@@ -428,8 +366,6 @@ app.get("/api/v1/launcher/img.json", handleImgJson);
 
 const handleVersionJson = (req: express.Request, res: express.Response) => {
   disableCache(res);
-  recordApiLog("OTA_CLIENT", req.path, req, "success", 200);
-
   const ota = db.data.otaVersion || initialDb.otaVersion;
   return res.json({
     versionCode: ota.versionCode,
@@ -462,6 +398,7 @@ app.get("/api/v1/launcher/version.json", handleVersionJson);
 // -------------------------------------------------------------
 app.get("/api/reseller/clients", (req, res) => {
   disableCache(res);
+  db.reload();
   const { resellerId } = req.query;
   let clients = db.data.clients || [];
 
@@ -473,16 +410,15 @@ app.get("/api/reseller/clients", (req, res) => {
 });
 
 app.post("/api/reseller/clients", (req, res) => {
+  db.reload();
   const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
-  const cleanMac = cleanHex(macAddress);
+  const cleanMac = cleanHex(macAddress || deviceToken);
   const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
 
-  if (!clientName || cleanMac.length < 6) {
+  if (!clientName || cleanMac.length < 4) {
     return res.status(400).json({ message: "Nome do Cliente e MAC Address válido são obrigatórios." });
   }
-
-  if (!db.data.clients) db.data.clients = [];
 
   let finalExpDate = new Date();
   if (expirationDate) {
@@ -495,7 +431,7 @@ app.post("/api/reseller/clients", (req, res) => {
 
   let client = id 
     ? db.data.clients.find((c: any) => c.id === id)
-    : db.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanMac);
+    : db.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac);
 
   if (client) {
     client.clientName = clientName;
@@ -529,6 +465,7 @@ app.post("/api/reseller/clients", (req, res) => {
 });
 
 app.post("/api/reseller/clients/renew", (req, res) => {
+  db.reload();
   const { id, days } = req.body;
   const client = (db.data.clients || []).find((c: any) => c.id === id);
   if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
@@ -545,6 +482,7 @@ app.post("/api/reseller/clients/renew", (req, res) => {
 });
 
 app.delete("/api/reseller/clients/:id", (req, res) => {
+  db.reload();
   const { id } = req.params;
   db.data.clients = (db.data.clients || []).filter((c: any) => c.id !== id);
   db.save();
@@ -552,6 +490,7 @@ app.delete("/api/reseller/clients/:id", (req, res) => {
 });
 
 app.post("/api/auth/login", (req, res) => {
+  db.reload();
   const { email, password } = req.body;
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanPassword = (password || "").trim();
@@ -571,6 +510,7 @@ app.post("/api/auth/login", (req, res) => {
 });
 
 app.get("/api/admin/stats", (req, res) => {
+  db.reload();
   const clients = db.data.clients || [];
   const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
   const now = new Date();
@@ -588,6 +528,7 @@ app.get("/api/admin/stats", (req, res) => {
 });
 
 app.get("/api/admin/resellers", (req, res) => {
+  db.reload();
   const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
   return res.json(resellers.map((r: any) => ({
     ...r,
@@ -597,6 +538,7 @@ app.get("/api/admin/resellers", (req, res) => {
 });
 
 app.get("/api/reseller/layout/:resellerId", (req, res) => {
+  db.reload();
   const targetId = normalizeResellerId(req.params.resellerId);
   let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
   if (!layout) layout = db.data.layouts[0] || initialDb.layouts[0];
@@ -604,6 +546,7 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
 });
 
 app.post("/api/reseller/layout", (req, res) => {
+  db.reload();
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
   const targetId = normalizeResellerId(resellerId);
 
