@@ -5,12 +5,6 @@ import {
   Search, 
   Edit3, 
   Trash2, 
-  Clock, 
-  Key, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Zap, 
   Copy, 
   Check, 
   Calendar,
@@ -47,14 +41,12 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // Calcula a data padrão para 30 dias à frente
   const getDefaultExpiration = (days: number = 30) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
     return d.toISOString().split('T')[0];
   };
 
-  // Form states com suporte ao calendário (expirationDate)
   const [formData, setFormData] = useState({
     id: '',
     resellerId: targetResellerId,
@@ -69,7 +61,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const handleQuickDaysSelect = (days: number) => {
     const targetDate = new Date();
     if (days === 9999) {
-      targetDate.setFullYear(targetDate.getFullYear() + 20); // Vitalício
+      targetDate.setFullYear(targetDate.getFullYear() + 20);
     } else {
       targetDate.setDate(targetDate.getDate() + days);
     }
@@ -121,7 +113,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     setError(null);
 
     if (!formData.macAddress || !formData.macAddress.trim()) {
-      setError('O preenchimento do MAC Address é obrigatório para cadastrar o cliente.');
+      setError('O preenchimento do MAC Address é obrigatório.');
       setLoading(false);
       return;
     }
@@ -172,7 +164,6 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
-  // Filter logic
   const filtered = clients.filter(c => {
     if (c.resellerId !== targetResellerId && targetResellerId !== 'usr_master' && targetResellerId !== 'master') return false;
 
@@ -213,8 +204,6 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        
-        {/* Search */}
         <div className="relative max-w-md flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
@@ -226,7 +215,6 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
           />
         </div>
 
-        {/* Status Tabs */}
         <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
           <button
             onClick={() => setStatusFilter('all')}
@@ -255,7 +243,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
         </div>
       </div>
 
-      {/* Client Devices Cards Grid */}
+      {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((c) => {
           const expDate = new Date(c.expirationDate);
@@ -274,7 +262,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
             }`}>
               
               <div>
-                {/* Header: Name + Status Badge */}
+                {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-extrabold text-white text-base tracking-tight">
@@ -296,7 +284,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </span>
                 </div>
 
-                {/* Device Token */}
+                {/* Token */}
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-3 flex items-center justify-between gap-2">
                   <div className="font-mono text-xs overflow-hidden">
                     <span className="text-[10px] text-slate-500 uppercase block">Token de Ativação:</span>
@@ -311,14 +299,18 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </button>
                 </div>
 
-                {/* Expiration Info */}
+                {/* Validade Clicável com Calendário */}
                 <div className="text-xs text-slate-300 space-y-1 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Validade:
+                  <div 
+                    onClick={() => openEditModal(c)}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 hover:bg-indigo-950/40 border border-slate-800 hover:border-indigo-500/50 cursor-pointer transition group"
+                    title="Clique para editar ou alterar a data no calendário"
+                  >
+                    <span className="text-slate-400 flex items-center gap-1.5 group-hover:text-indigo-300 font-medium">
+                      <Calendar className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" /> Validade:
                     </span>
-                    <span className="font-mono font-bold text-slate-200">
-                      {expDate.toLocaleDateString('pt-BR')}
+                    <span className="font-mono font-bold text-indigo-300 group-hover:text-white transition-colors bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-500/20">
+                      {expDate.toLocaleDateString('pt-BR')} ✏️
                     </span>
                   </div>
                   {c.notes && (
@@ -337,35 +329,30 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     <button
                       onClick={() => handleQuickRenew(c.id, 30, c.clientName)}
                       className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center"
-                      title="Adicionar 30 Dias (Mensal)"
                     >
                       +30d
                     </button>
                     <button
                       onClick={() => handleQuickRenew(c.id, 90, c.clientName)}
                       className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center"
-                      title="Adicionar 90 Dias (Trimestral)"
                     >
                       +90d
                     </button>
                     <button
                       onClick={() => handleQuickRenew(c.id, 180, c.clientName)}
                       className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center"
-                      title="Adicionar 180 Dias (Semestral)"
                     >
                       +180d
                     </button>
                     <button
                       onClick={() => handleQuickRenew(c.id, 365, c.clientName)}
                       className="bg-purple-950/80 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 p-1.5 rounded-lg transition text-center"
-                      title="Adicionar 365 Dias (Anual)"
                     >
                       +1Ano
                     </button>
                     <button
                       onClick={() => handleQuickRenew(c.id, 9999, c.clientName)}
                       className="bg-emerald-950/80 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 p-1.5 rounded-lg transition text-center"
-                      title="Plano Vitalício"
                     >
                       Vitalício
                     </button>
@@ -403,7 +390,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
         })}
       </div>
 
-      {/* Modal Form Create / Edit Client */}
+      {/* Modal Form com Calendário Integrado */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
@@ -412,7 +399,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
               {editingClient ? 'Editar Cliente / Dispositivo' : 'Cadastrar Novo Cliente (TV Box / Smart TV)'}
             </h3>
             <p className="text-xs text-slate-400 mb-5">
-              Informe o MAC Address do dispositivo ou gere um token de ativação direta
+              Informe o MAC Address do dispositivo ou selecione o período de acesso
             </p>
 
             {error && (
@@ -428,7 +415,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="HIGHTV"
+                  placeholder="Ex: João Silva - TV Sala"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
@@ -441,7 +428,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="9C:00:D3:6F:F8:F0"
+                    placeholder="AA:BB:CC:11:22:33"
                     value={formData.macAddress}
                     onChange={(e) => setFormData({ ...formData, macAddress: e.target.value.toUpperCase() })}
                     className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
@@ -453,7 +440,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="REV-VIP-8822"
+                    placeholder="DEV-AABBCC112233"
                     value={formData.deviceToken}
                     onChange={(e) => setFormData({ ...formData, deviceToken: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
@@ -461,7 +448,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 </div>
               </div>
 
-              {/* Seletor de Validade: Botões Rápidos + Campo Calendário */}
+              {/* Botões Rápidos + Campo Calendário */}
               <div className="space-y-2.5">
                 <label className="block text-slate-300 font-semibold">
                   Validade do Plano (Seleção de Botões Rápidos):
@@ -485,10 +472,9 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   ))}
                 </div>
 
-                {/* Input de Data / Calendário */}
                 <div className="pt-1">
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Ou determine a data exata no calendário:
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Data exata de vencimento:
                   </label>
                   <input
                     type="date"
