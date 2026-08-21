@@ -177,7 +177,6 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
   let client: any = null;
   if (cleanMac.length >= 4) {
-    // Procura qualquer cliente cujo MAC ou Token de ativação coincida com o valor limpo
     const matches = (db.data.clients || []).filter((c: any) => {
       const cMac = cleanHex(c.macAddress);
       const cTok = cleanHex(c.deviceToken);
@@ -186,7 +185,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
 
     if (matches.length > 0) {
       const now = new Date();
-      // Dá preferência absoluta ao registro que estiver ATIVO com validade futura
+      // Prioridade absoluta: registro ATIVO com validade futura
       client = matches.find((c: any) => c.status === "active" && new Date(c.expirationDate) > now) ||
                matches.find((c: any) => c.status === "active") ||
                matches[0];
@@ -200,7 +199,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     reseller = (db.data.users || []).find((u: any) => u.id === "usr_master") || db.data.users[0];
   }
 
-  // Auto-registro somente se não existir absolutamente nenhum registro prévio
+  // Auto-registro como pendente
   if (!client && cleanMac.length >= 4) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
@@ -234,6 +233,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       isNewClient = true;
       isExpired = true;
     } else if (client.status === "active" && expDate > now) {
+      // 100% LIBERADO
       isExpired = false;
       isNewClient = false;
     } else {
@@ -261,6 +261,18 @@ function extractDeviceCredentials(req: express.Request) {
   const rawToken = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
   return { mac: rawMac, token: rawToken };
 }
+
+// -------------------------------------------------------------
+// ROTA DE DIAGNÓSTICO DIRETO DO BANCO (DEBUG)
+// -------------------------------------------------------------
+app.get("/api/debug/clients", (req, res) => {
+  disableCache(res);
+  db.reload();
+  return res.json({
+    total: db.data.clients?.length || 0,
+    clients: db.data.clients || []
+  });
+});
 
 // -------------------------------------------------------------
 // ENDPOINTS PÚBLICOS DO LAUNCHER
@@ -464,20 +476,30 @@ app.post("/api/reseller/clients", (req, res) => {
   }
 });
 
+// RENOVAÇÃO INTELIGENTE (Busca por ID ou por MAC)
 app.post("/api/reseller/clients/renew", (req, res) => {
   db.reload();
-  const { id, days } = req.body;
-  const client = (db.data.clients || []).find((c: any) => c.id === id);
-  if (!client) return res.status(404).json({ message: "Cliente não encontrado." });
+  const { id, macAddress, days } = req.body;
+  const cleanMac = cleanHex(macAddress || id);
 
-  const addDays = Number(days || 30);
+  const client = (db.data.clients || []).find((c: any) => 
+    c.id === id || cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac
+  );
+
+  if (!client) {
+    return res.status(404).json({ message: "Cliente não encontrado para renovação." });
+  }
+
+  const addDays = Number(days === 9999 ? 3650 : (days || 30));
   const currentExp = new Date(client.expirationDate);
-  const baseDate = currentExp > new Date() ? currentExp : new Date();
+  const now = new Date();
+  const baseDate = (!isNaN(currentExp.getTime()) && currentExp > now) ? currentExp : now;
 
   client.expirationDate = new Date(baseDate.getTime() + addDays * 86400000).toISOString();
   client.status = "active";
 
   db.save();
+  console.log(`[RENOVAÇÃO APLICADA] Cliente "${client.clientName}" (${client.macAddress}) -> Ativo até ${client.expirationDate}`);
   return res.json(client);
 });
 
@@ -579,7 +601,7 @@ async function startServer() {
     app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
   }
 
-  app.listen(PORT, () => console.log(`🚀 Servidor Luna Launcher Admin executando na porta ${PORT}`));
+  app.listen(PORT, () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
 }
 
 startServer();
