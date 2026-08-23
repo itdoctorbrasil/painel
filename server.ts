@@ -80,8 +80,8 @@ const initialDb = {
   clients: [],
   otaVersion: {
     id: "ota_v210",
-    versionCode: 3,
-    versionName: "1.0.3",
+    versionCode: 5,
+    versionName: "1.0.5",
     downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
     forceUpdate: false,
     releaseNotes: "• Estabilidade e sincronização em tempo real",
@@ -212,12 +212,12 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     client = {
       id: "cli_" + Date.now(),
       resellerId: reseller ? reseller.id : "usr_rev_1",
-      clientName: `Novo Aparelho (${shortId})`,
+      clientName: `Novo dispositivo (${shortId})`,
       macAddress: formattedMac,
       deviceToken: formattedMac,
       expirationDate: new Date().toISOString(),
       status: "pending",
-      notes: "Auto-registrado via App. Aguardando aprovação.",
+      notes: "Nova instalação detectada, aguardando liberação.",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
