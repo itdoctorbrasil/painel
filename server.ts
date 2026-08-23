@@ -44,19 +44,7 @@ const initialDb = {
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
     },
-    {
-      id: "usr_rev_1",
-      name: "Marcelo",
-      email: "marcoliver89@icloud.com",
-      password: "213540Ma",
-      role: "reseller",
-      resellerToken: "REV-VIP-8822",
-      clientLimit: 50,
-      status: "active",
-      createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-      lastLogin: new Date().toISOString()
-    }
-  ],
+        ],
   layouts: [
     {
       id: "lay_usr_master",
