@@ -6,13 +6,12 @@ import {
   Edit3, 
   Trash2, 
   Key, 
-  ShieldAlert, 
-  CheckCircle2, 
-  XCircle, 
   Eye, 
   RotateCw, 
   Search,
-  Lock
+  Lock,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 interface ResellerManagementProps {
@@ -31,6 +30,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReseller, setEditingReseller] = useState<Partial<User> | null>(null);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // Estado para alternar visualização
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,96 +123,199 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
 
         <button
           onClick={openCreateModal}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
         >
           <UserPlus className="w-4 h-4" /> Novo Revendedor
         </button>
       </div>
 
-      {/* Search Filter Bar */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-        <input
-          type="text"
-          placeholder="Buscar por nome, email ou token de revenda..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition"
-        />
+      {/* Search Filter Bar & View Mode Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="relative max-w-md flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <input
+            type="text"
+            placeholder="Buscar por nome, email ou token de revenda..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/* Alternador de Modo de Visualização */}
+        <div className="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <button
+            onClick={() => setViewMode('card')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              viewMode === 'card'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+            title="Visualização em Cards"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> Cards
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              viewMode === 'list'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+            title="Visualização em Lista / Tabela"
+          >
+            <List className="w-3.5 h-3.5" /> Lista
+          </button>
+        </div>
       </div>
 
-      {/* Resellers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((r) => (
-          <div key={r.id} className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between transition group">
-            
-            <div>
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-extrabold text-white text-base tracking-tight group-hover:text-indigo-400 transition">
-                    {r.name}
-                  </h3>
-                  <p className="text-xs text-slate-400 truncate">{r.email}</p>
+      {/* Content View: Card vs List */}
+      {viewMode === 'card' ? (
+        /* Resellers Grid (Cards) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((r) => (
+            <div key={r.id} className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between transition group">
+              
+              <div>
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-extrabold text-white text-base tracking-tight group-hover:text-indigo-400 transition">
+                      {r.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 truncate">{r.email}</p>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    r.status === 'active' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                  }`}>
+                    {r.status === 'active' ? 'Ativo' : 'Bloqueado'}
+                  </span>
                 </div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  r.status === 'active' 
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                }`}>
-                  {r.status === 'active' ? 'Ativo' : 'Bloqueado'}
-                </span>
+
+                {/* Token Display */}
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-4 font-mono text-xs">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <Key className="w-3 h-3 text-amber-400" /> Token de Integração Luna API:
+                  </div>
+                  <span className="text-amber-300 font-bold text-sm tracking-wide">{r.resellerToken}</span>
+                </div>
+
+                {/* Stats Bar */}
+                <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+                  <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
+                    <span className="text-slate-400 block text-[10px] uppercase">Dispositivos Ativos</span>
+                    <span className="text-emerald-400 font-black text-base">{r.activeClients || 0}</span>
+                  </div>
+                  <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
+                    <span className="text-slate-400 block text-[10px] uppercase">Limite de Telas</span>
+                    <span className="text-indigo-300 font-black text-base">{r.clientLimit || 50}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Token Display */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-4 font-mono text-xs">
-                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Key className="w-3 h-3 text-amber-400" /> Token de Integração Luna API:
-                </div>
-                <span className="text-amber-300 font-bold text-sm tracking-wide">{r.resellerToken}</span>
-              </div>
+              {/* Actions */}
+              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => onSelectResellerForImpersonation(r)}
+                  className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/30 flex items-center gap-1.5 flex-1 justify-center cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Acessar Layout
+                </button>
 
-              {/* Stats Bar */}
-              <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
-                  <span className="text-slate-400 block text-[10px] uppercase">Dispositivos Ativos</span>
-                  <span className="text-emerald-400 font-black text-base">{r.activeClients || 0}</span>
-                </div>
-                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
-                  <span className="text-slate-400 block text-[10px] uppercase">Limite de Telas</span>
-                  <span className="text-indigo-300 font-black text-base">{r.clientLimit || 50}</span>
-                </div>
+                <button
+                  onClick={() => openEditModal(r)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg text-xs font-medium transition cursor-pointer"
+                  title="Editar Revenda"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => handleDelete(r.id, r.name)}
+                  className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg text-xs font-medium transition border border-rose-500/20 cursor-pointer"
+                  title="Excluir Revenda"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-              <button
-                onClick={() => onSelectResellerForImpersonation(r)}
-                className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/30 flex items-center gap-1.5 flex-1 justify-center"
-              >
-                <Eye className="w-3.5 h-3.5" /> Acessar Layout
-              </button>
-
-              <button
-                onClick={() => openEditModal(r)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg text-xs font-medium transition"
-                title="Editar Revenda"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => handleDelete(r.id, r.name)}
-                className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg text-xs font-medium transition border border-rose-500/20"
-                title="Excluir Revenda"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+          ))}
+        </div>
+      ) : (
+        /* Resellers Table (Lista Compacta) */
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+                <tr>
+                  <th className="p-4">Revendedor / E-mail</th>
+                  <th className="p-4">Token Luna API</th>
+                  <th className="p-4 text-center">Dispositivos / Limite</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {filtered.length > 0 ? (
+                  filtered.map((r) => (
+                    <tr key={r.id} className="hover:bg-slate-800/40 transition">
+                      <td className="p-4">
+                        <div className="font-extrabold text-white text-sm">{r.name}</div>
+                        <div className="text-slate-400 text-xs">{r.email}</div>
+                      </td>
+                      <td className="p-4 font-mono text-amber-300 font-bold">{r.resellerToken || '-'}</td>
+                      <td className="p-4 text-center">
+                        <span className="text-emerald-400 font-bold text-sm">{r.activeClients || 0}</span>
+                        <span className="text-slate-500"> / {r.clientLimit || 50} telas</span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          r.status === 'active' 
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {r.status === 'active' ? 'Ativo' : 'Bloqueado'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={() => onSelectResellerForImpersonation(r)}
+                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/30 inline-flex items-center gap-1 cursor-pointer"
+                          title="Acessar Layout"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Layout
+                        </button>
+                        <button
+                          onClick={() => openEditModal(r)}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-1.5 rounded-lg inline-flex items-center transition cursor-pointer"
+                          title="Editar"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(r.id, r.name)}
+                          className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg inline-flex items-center transition border border-rose-500/20 cursor-pointer"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                      Nenhum revendedor encontrado.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Modal Form Create / Edit */}
       {isModalOpen && (
@@ -258,14 +361,13 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 />
               </div>
 
-              {/* Campo de Senha adicionado ao Modal */}
               <div>
                 <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
                   <Lock className="w-3.5 h-3.5 text-indigo-400" /> Senha de Acesso
                 </label>
                 <input
                   type="password"
-                  required={!editingReseller} // Obrigatório apenas no cadastro
+                  required={!editingReseller}
                   placeholder={editingReseller ? "Deixe em branco para manter a senha atual" : "Digite a senha de acesso"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -282,7 +384,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                       ...formData,
                       resellerToken: `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
                     })}
-                    className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1 font-mono"
+                    className="text-[10px] text-indigo-400 hover:underline flex items-center gap-1 font-mono cursor-pointer"
                   >
                     <RotateCw className="w-3 h-3" /> Gerar Novo
                   </button>
@@ -329,14 +431,14 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-medium"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-medium cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-600/30"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-600/30 cursor-pointer"
                 >
                   {loading ? 'Salvando...' : 'Salvar Revendedor'}
                 </button>
