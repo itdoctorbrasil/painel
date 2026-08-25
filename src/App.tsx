@@ -37,15 +37,26 @@ import { ApiTester } from './components/reseller/ApiTester';
 import { LogIn, Lock, Mail } from 'lucide-react';
 
 export default function App() {
-  // Auth state
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // 1. Persistência de Sessão: Recupera o usuário do localStorage ao recarregar (F5)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('luna_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // App Navigation
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  // 2. Sincronização de Abas com a URL (Resolve a seta "Voltar" do navegador)
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'dashboard';
+  });
 
   // Master impersonation / view mode
   const [activeResellerView, setActiveResellerView] = useState<User | null>(null);
@@ -60,6 +71,35 @@ export default function App() {
   // Tester prefilled token
   const [initialTestToken, setInitialTestToken] = useState<string | undefined>(undefined);
 
+  // Salva ou remove o usuário do localStorage quando logar/deslogar
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('luna_current_user', JSON.stringify(currentUser));
+      loadAllData(currentUser);
+    } else {
+      localStorage.removeItem('luna_current_user');
+    }
+  }, [currentUser]);
+
+  // Função centralizada para mudar de aba atualizando a URL (Histórico do navegador)
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({ tab }, '', url.toString());
+  };
+
+  // Escuta os botões "Voltar / Avançar" do navegador
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab') || 'dashboard';
+      setActiveTab(tab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginLoading(true);
@@ -67,7 +107,7 @@ export default function App() {
     try {
       const res = await loginApi(email.trim(), password.trim());
       setCurrentUser(res.user);
-      loadAllData(res.user);
+      handleTabChange('dashboard');
     } catch (err: any) {
       setLoginError(err.message || 'Credenciais inválidas. Verifique seu e-mail e senha.');
     } finally {
@@ -78,6 +118,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveResellerView(null);
+    localStorage.removeItem('luna_current_user');
     setEmail('');
     setPassword('');
   };
@@ -178,7 +219,7 @@ export default function App() {
   // Quick Open API Tester with Token
   const handleOpenApiTester = (token: string) => {
     setInitialTestToken(token);
-    setActiveTab('api_tester');
+    handleTabChange('api_tester');
   };
 
   // Render Login View if unauthenticated
@@ -275,11 +316,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans">
       
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation - Passamos handleTabChange para atualizar o histórico */}
       <Sidebar
         currentUser={currentUser}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         onLogout={handleLogout}
         activeResellerView={activeResellerView}
       />
@@ -302,7 +343,7 @@ export default function App() {
           activeResellerView={activeResellerView}
           onSelectResellerView={(res) => setActiveResellerView(res)}
           otaVersion={otaVersion || undefined}
-          onOpenOtaModal={() => setActiveTab('ota')}
+          onOpenOtaModal={() => handleTabChange('ota')}
         />
 
         {/* Dynamic Tab Body */}
@@ -314,7 +355,7 @@ export default function App() {
               <GlobalStats
                 stats={globalStats}
                 resellers={resellers}
-                onNavigateToTab={(tab) => setActiveTab(tab)}
+                onNavigateToTab={(tab) => handleTabChange(tab)}
               />
             ) : (
               <ClientManagement
@@ -337,7 +378,7 @@ export default function App() {
               onDeleteReseller={handleDeleteReseller}
               onSelectResellerForImpersonation={(res) => {
                 setActiveResellerView(res);
-                setActiveTab('background_editor');
+                handleTabChange('background_editor');
               }}
             />
           )}
