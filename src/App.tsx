@@ -33,7 +33,7 @@ import { LayoutEditor } from './components/reseller/LayoutEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 
-import { LogIn, Lock, Mail, Tv } from 'lucide-react';
+import { LogIn, Lock, Mail } from 'lucide-react';
 
 export default function App() {
   // Auth state
@@ -248,7 +248,7 @@ export default function App() {
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loginLoading ? (
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
