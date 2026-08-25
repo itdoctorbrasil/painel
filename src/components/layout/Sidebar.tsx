@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div>
             <h1 className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
-              LUNA <span className="text-indigo-400 font-medium">SAAS</span>
+              LUNA <span className="text-indigo-400 font-medium">LAUNCHER</span>
             </h1>
             <p className="text-[11px] text-slate-400 font-medium">
               {isMaster ? 'Painel Master Admin' : 'Painel de Revendedor'}
