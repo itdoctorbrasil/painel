@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, OtaVersion } from '../../types';
-import { Download, RefreshCw, Eye, Sparkles, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Download, Eye, Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   currentUser: User;
@@ -21,6 +21,24 @@ export const Header: React.FC<HeaderProps> = ({
   otaVersion,
   onOpenOtaModal
 }) => {
+  // Estado do Tema (Dark por padrão, salvo em localStorage)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('luna_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('luna_theme', theme);
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.remove('light-mode');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const getTitle = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -32,8 +50,10 @@ export const Header: React.FC<HeaderProps> = ({
       case 'all_clients':
       case 'clients':
         return 'Gerenciamento de Clientes & Dispositivos';
-      case 'layout_editor':
-        return 'Customização do Launcher (Grade 5 Apps)';
+      case 'background_editor':
+        return 'Gerenciamento de Backgrounds & Carrossel HD';
+      case 'apps_editor':
+        return 'Gerenciamento da Grade Fixa de Aplicativos';
       case 'api_tester':
         return 'Testador de Endpoints REST & JSON';
       default:
@@ -61,6 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Header Actions */}
       <div className="flex items-center gap-3">
+        
         {/* Master: Quick Reseller Switcher */}
         {currentUser.role === 'master' && (
           <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
@@ -93,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
         {otaVersion && (
           <button
             onClick={onOpenOtaModal}
-            className="flex items-center gap-2 bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm"
+            className="flex items-center gap-2 bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm cursor-pointer"
             title="Clique para ver detalhes do OTA version.json"
           >
             <Download className="w-3.5 h-3.5 text-indigo-400 animate-bounce" />
@@ -103,6 +124,19 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
         )}
+
+        {/* Botão de Alternância de Tema (Diurno / Noturno) */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition shadow-sm cursor-pointer flex items-center justify-center"
+          title={theme === 'dark' ? 'Mudar para Modo Diurno' : 'Mudar para Modo Noturno'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-amber-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-400" />
+          )}
+        </button>
       </div>
     </header>
   );
