@@ -29,7 +29,8 @@ import { GlobalStats } from './components/master/GlobalStats';
 import { ResellerManagement } from './components/master/ResellerManagement';
 import { OtaManagement } from './components/master/OtaManagement';
 
-import { LayoutEditor } from './components/reseller/LayoutEditor';
+import { BackgroundEditor } from './components/reseller/BackgroundEditor';
+import { AppGridEditor } from './components/reseller/AppGridEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 
@@ -336,7 +337,7 @@ export default function App() {
               onDeleteReseller={handleDeleteReseller}
               onSelectResellerForImpersonation={(res) => {
                 setActiveResellerView(res);
-                setActiveTab('layout_editor');
+                setActiveTab('background_editor');
               }}
             />
           )}
@@ -362,9 +363,9 @@ export default function App() {
             />
           )}
 
-          {/* 5. Layout Editor (5 Apps + Background TV) */}
-          {activeTab === 'layout_editor' && (
-            <LayoutEditor
+          {/* 5. Gerenciamento Isolado de Backgrounds */}
+          {activeTab === 'background_editor' && (
+            <BackgroundEditor
               currentUser={currentUser}
               activeResellerView={activeResellerView}
               layout={layout}
@@ -372,7 +373,17 @@ export default function App() {
             />
           )}
 
-          {/* 6. API Tester & Documentation */}
+          {/* 6. Gerenciamento Isolado da Grade de Apps */}
+          {activeTab === 'apps_editor' && (
+            <AppGridEditor
+              currentUser={currentUser}
+              activeResellerView={activeResellerView}
+              layout={layout}
+              onSaveLayout={handleSaveLayout}
+            />
+          )}
+
+          {/* 7. API Tester & Documentation */}
           {activeTab === 'api_tester' && (
             <ApiTester
               currentUser={currentUser}
