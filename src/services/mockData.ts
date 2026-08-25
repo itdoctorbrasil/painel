@@ -13,80 +13,80 @@ export interface AppPreset {
 }
 
 // -------------------------------------------------------------
-// BANNERS OFICIAIS DO LUNA LAUNCHER (HD 1080p / WEBP)
+// FUNDOS DINÂMICOS, TECH E ABSTRATOS (HD 1080p)
 // -------------------------------------------------------------
 export const BACKGROUND_PRESETS: BackgroundPreset[] = [
   {
     id: "preset_bg_1",
-    name: "Banner Principal 1",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp"
+    name: "Cyber Neon Tech",
+    category: "Futurista",
+    url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_2",
-    name: "Banner Principal 2",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp"
+    name: "Purple Gradient Vibe",
+    category: "Gradientes",
+    url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_3",
-    name: "Banner Principal 3",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp"
+    name: "Abstrato Futurista",
+    category: "Abstrato",
+    url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_4",
-    name: "Banner Principal 4",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp"
+    name: "Aurora Boreal Colorida",
+    category: "Natureza / Luz",
+    url: "https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_5",
-    name: "Banner Principal 5",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp"
+    name: "Ondas Tech Azul",
+    category: "Minimalista",
+    url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_6",
-    name: "Banner Principal 6",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+    name: "Partículas Cósmicas",
+    category: "Espaço",
+    url: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_7",
-    name: "Banner Principal 7",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp"
+    name: "Minimal Dark Purple",
+    category: "Gradientes",
+    url: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_8",
-    name: "Banner Principal 8",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp"
+    name: "Neon Glow Pink & Blue",
+    category: "Futurista",
+    url: "https://images.unsplash.com/photo-1563089145-599997674d42?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_9",
-    name: "Banner Principal 9",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp"
+    name: "Sunset Tech Gradient",
+    category: "Gradientes",
+    url: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_10",
-    name: "Banner Principal 10",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_10.webp"
+    name: "Liquid Gold Texture",
+    category: "Abstrato",
+    url: "https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_11",
-    name: "Banner Principal 11",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp"
+    name: "Geometria Moderna Dark",
+    category: "Minimalista",
+    url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1920&auto=format&fit=crop&q=80"
   },
   {
     id: "preset_bg_12",
-    name: "Banner Principal 12",
-    category: "Oficial",
-    url: "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_12.webp"
+    name: "Galáxia Vibrante",
+    category: "Espaço",
+    url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&auto=format&fit=crop&q=80"
   }
 ];
 
