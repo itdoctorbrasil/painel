@@ -4,14 +4,12 @@ import {
   LayoutDashboard, 
   Users, 
   DownloadCloud, 
-  Tv, 
-  Tv2,
-  Key, 
+  UserCheck, 
   Code2, 
   LogOut, 
   Shield, 
-  UserCheck, 
-  Layers
+  Image as ImageIcon,
+  AppWindow
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,18 +29,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isMaster = currentUser.role === 'master' && !activeResellerView;
 
+  // Menu do Master Admin (separando Backgrounds e Apps)
   const masterNav = [
     { id: 'dashboard', label: 'Estatísticas Globais', icon: LayoutDashboard },
     { id: 'resellers', label: 'Revendedores', icon: Users },
     { id: 'ota', label: 'Atualizações OTA (APK)', icon: DownloadCloud },
     { id: 'all_clients', label: 'Todos os Clientes', icon: UserCheck },
-    { id: 'layout_editor', label: 'Editor de Layout (Grade 5 Apps)', icon: Tv },
+    { id: 'background_editor', label: 'Gerenciar Backgrounds', icon: ImageIcon },
+    { id: 'apps_editor', label: 'Gerenciar Grade de Apps', icon: AppWindow },
     { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
   ];
 
+  // Menu do Revendedor (separando Backgrounds e Apps)
   const resellerNav = [
     { id: 'dashboard', label: 'Meu Painel', icon: LayoutDashboard },
-    { id: 'layout_editor', label: 'Grade 5 Apps & Fundo TV', icon: Tv2 },
+    { id: 'background_editor', label: 'Backgrounds & Carrossel', icon: ImageIcon },
+    { id: 'apps_editor', label: 'Grade Fixa de Apps', icon: AppWindow },
     { id: 'clients', label: 'Meus Clientes & Validades', icon: UserCheck },
     { id: 'api_tester', label: 'Integração & Token Luna', icon: Code2 }
   ];
@@ -94,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-lg shadow-indigo-500/25'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -112,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800">
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-white hover:bg-rose-500/20 border border-rose-500/20 transition"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-white hover:bg-rose-500/20 border border-rose-500/20 transition cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sair da Conta</span>
