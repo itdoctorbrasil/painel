@@ -1,19 +1,14 @@
 import express from "express";
 import path from "path";
-import fs from "fs";
 import cors from "cors";
+import mongoose from "mongoose";
 
 const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "db_v2.json");
+const MONGO_URI = process.env.MONGO_URI || "";
 
 const EXPIRATION_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/expiration.webp";
 const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/newclient.webp";
 const CONNECTION_LOST_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/connectiolost.webp";
-
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
 
 const defaultBackgrounds = [
   "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
@@ -32,89 +27,60 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-const initialDb = {
-  users: [
-    {
-      id: "usr_master",
-      name: "Acesso Master",
-      email: "admin@painel.com",
-      password: "2b079e541af29b37f713",
-      role: "master",
-      status: "active",
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
-    },
-        ],
-  layouts: [
-    {
-      id: "lay_usr_master",
-      resellerId: "usr_master",
-      backgroundUrl: defaultBackgrounds[0],
-      backgrounds: defaultBackgrounds,
-      overlayOpacity: 0.35,
-      apps: defaultApps,
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "lay_usr_rev_1",
-      resellerId: "usr_rev_1",
-      backgroundUrl: defaultBackgrounds[0],
-      backgrounds: defaultBackgrounds,
-      overlayOpacity: 0.35,
-      apps: defaultApps,
-      updatedAt: new Date().toISOString()
-    }
-  ],
-  clients: [],
-  otaVersion: {
-    id: "ota_v210",
-    versionCode: 5,
-    versionName: "1.0.5",
-    downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
-    forceUpdate: false,
-    releaseNotes: "• Correções, melhorias e novos recursos",
-    minSupportedVersion: 100,
-    fileSizeBytes: 18450000,
-    updatedAt: new Date().toISOString()
-  },
-  apiLogs: []
-};
+// Definição dos Schemas do Mongoose
+const userSchema = new mongoose.Schema({
+  id: { type: String, unique: true, required: true },
+  name: String,
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  role: String,
+  resellerToken: String,
+  clientLimit: Number,
+  status: String,
+  createdAt: String,
+  lastLogin: String
+});
 
-class DB {
-  data: any;
+const layoutSchema = new mongoose.Schema({
+  id: { type: String, unique: true, required: true },
+  resellerId: String,
+  backgroundUrl: String,
+  backgrounds: [String],
+  overlayOpacity: Number,
+  apps: Array,
+  updatedAt: String
+});
 
-  constructor() {
-    this.reload();
-  }
+const clientSchema = new mongoose.Schema({
+  id: { type: String, unique: true, required: true },
+  resellerId: String,
+  clientName: String,
+  macAddress: String,
+  deviceToken: String,
+  expirationDate: String,
+  status: String,
+  notes: String,
+  lastSeen: String,
+  createdAt: String
+});
 
-  reload() {
-    if (fs.existsSync(DB_FILE)) {
-      try {
-        const raw = fs.readFileSync(DB_FILE, "utf-8");
-        this.data = JSON.parse(raw);
-        if (!Array.isArray(this.data.clients)) this.data.clients = [];
-        if (!Array.isArray(this.data.users)) this.data.users = initialDb.users;
-        if (!Array.isArray(this.data.layouts)) this.data.layouts = initialDb.layouts;
-      } catch (err) {
-        this.data = initialDb;
-        this.save();
-      }
-    } else {
-      this.data = initialDb;
-      this.save();
-    }
-  }
+const otaSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  versionCode: Number,
+  versionName: String,
+  downloadUrl: String,
+  forceUpdate: Boolean,
+  releaseNotes: String,
+  minSupportedVersion: Number,
+  fileSizeBytes: Number,
+  updatedAt: String
+});
 
-  save() {
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), "utf-8");
-    } catch (e) {
-      console.error("Falha ao salvar db.json:", e);
-    }
-  }
-}
+const User = mongoose.model("User", userSchema);
+const Layout = mongoose.model("Layout", layoutSchema);
+const Client = mongoose.model("Client", clientSchema);
+const Ota = mongoose.model("Ota", otaSchema);
 
-const db = new DB();
 const app = express();
 
 app.use(cors({
@@ -152,25 +118,80 @@ function normalizeResellerId(id?: string): string {
   return id;
 }
 
-/**
- * Resolução Multi-Tenant isolada por Token e MAC
- */
-function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
-  db.reload();
+// Seed seguro: apenas cria o Master e OTA padrões se o banco estiver totalmente vazio
+async function seedDatabase() {
+  const masterExists = await User.findOne({ id: "usr_master" });
+  if (!masterExists) {
+    await User.create({
+      id: "usr_master",
+      name: "Acesso Master",
+      email: "admin@painel.com",
+      password: "2b079e541af29b37f713",
+      role: "master",
+      status: "active",
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    });
+  }
 
+  const masterLayout = await Layout.findOne({ resellerId: "usr_master" });
+  if (!masterLayout) {
+    await Layout.create({
+      id: "lay_usr_master",
+      resellerId: "usr_master",
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  const rev1Layout = await Layout.findOne({ resellerId: "usr_rev_1" });
+  if (!rev1Layout) {
+    await Layout.create({
+      id: "lay_usr_rev_1",
+      resellerId: "usr_rev_1",
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps,
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  const otaExists = await Ota.findOne({ id: "ota_v210" });
+  if (!otaExists) {
+    await Ota.create({
+      id: "ota_v210",
+      versionCode: 5,
+      versionName: "1.0.5",
+      downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
+      forceUpdate: false,
+      releaseNotes: "• Correções, melhorias e novos recursos",
+      minSupportedVersion: 100,
+      fileSizeBytes: 18450000,
+      updatedAt: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Resolução Multi-Tenant isolada por Token e MAC (Assíncrona)
+ */
+async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
 
-  // 1. Identifica a Revenda dona da requisição através do Token
   let reseller: any = null;
   if (cleanToken.length > 0) {
-    reseller = (db.data.users || []).find((u: any) => cleanHex(u.resellerToken) === cleanToken);
+    reseller = await User.findOne({ resellerToken: new RegExp(`^${cleanToken}$`, "i") });
   }
 
-  // 2. Busca o Cliente por MAC
   let client: any = null;
   if (cleanMac.length >= 4) {
-    const matches = (db.data.clients || []).filter((c: any) => {
+    const allClients = await Client.find({});
+    const matches = allClients.filter((c: any) => {
       const cMac = cleanHex(c.macAddress);
       const cTok = cleanHex(c.deviceToken);
       return (cMac.length > 0 && cMac === cleanMac) || (cTok.length > 0 && cTok === cleanMac);
@@ -184,15 +205,13 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     }
   }
 
-  // Se o cliente existe mas a requisição não enviou token, herda o revendedor do cliente
   if (!reseller && client) {
-    reseller = (db.data.users || []).find((u: any) => u.id === client.resellerId);
+    reseller = await User.findOne({ id: client.resellerId });
   }
   if (!reseller) {
-    reseller = (db.data.users || []).find((u: any) => u.id === "usr_rev_1") || db.data.users[0];
+    reseller = await User.findOne({ id: "usr_rev_1" }) || await User.findOne({});
   }
 
-  // 3. Auto-registro vinculado estritamente à revenda identificada
   if (!client && cleanMac.length >= 4) {
     const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
     const shortId = cleanMac.slice(-6);
@@ -210,9 +229,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       createdAt: new Date().toISOString()
     };
 
-    if (!db.data.clients) db.data.clients = [];
-    db.data.clients.unshift(client);
-    db.save();
+    await Client.create(client);
   }
 
   let isExpired = false;
@@ -225,7 +242,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     if (expDate > now && client.status !== "suspended") {
       if (client.status === "pending") {
         client.status = "active";
-        db.save();
+        await Client.updateOne({ id: client.id }, { status: "active" });
       }
       isExpired = false;
       isNewClient = false;
@@ -234,7 +251,7 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       isNewClient = (client.status === "pending");
       if (client.status === "active" && expDate <= now) {
         client.status = "expired";
-        db.save();
+        await Client.updateOne({ id: client.id }, { status: "expired" });
       }
     }
   } else {
@@ -246,10 +263,16 @@ function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
     isExpired = true;
   }
 
-  // Entrega o layout customizado e exclusivo do revendedor vinculado
   const targetId = reseller ? reseller.id : "usr_master";
-  let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
-  if (!layout) layout = (db.data.layouts || [])[0] || initialDb.layouts[0];
+  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
+  if (!layout) {
+    layout = await Layout.findOne({}) || {
+      backgroundUrl: defaultBackgrounds[0],
+      backgrounds: defaultBackgrounds,
+      overlayOpacity: 0.35,
+      apps: defaultApps
+    };
+  }
 
   return { client, reseller, layout, isExpired, isNewClient };
 }
@@ -263,10 +286,10 @@ function extractDeviceCredentials(req: express.Request) {
 // -------------------------------------------------------------
 // ENDPOINTS PÚBLICOS DO LAUNCHER
 // -------------------------------------------------------------
-const handleAppsJson = (req: express.Request, res: express.Response) => {
+const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, isExpired } = resolveLayoutAndClient(mac, token);
+  const { layout, isExpired } = await resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
     return res.json({
@@ -309,10 +332,10 @@ const handleAppsJson = (req: express.Request, res: express.Response) => {
 app.get("/apps.json", handleAppsJson);
 app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
-const handleImgJson = (req: express.Request, res: express.Response) => {
+const handleImgJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, isExpired, isNewClient } = resolveLayoutAndClient(mac, token);
+  const { layout, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
 
   if (isExpired) {
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
@@ -362,9 +385,19 @@ const handleImgJson = (req: express.Request, res: express.Response) => {
 app.get("/img.json", handleImgJson);
 app.get("/api/v1/launcher/img.json", handleImgJson);
 
-const handleVersionJson = (req: express.Request, res: express.Response) => {
+const handleVersionJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
-  const ota = db.data.otaVersion || initialDb.otaVersion;
+  const ota = await Ota.findOne({ id: "ota_v210" }) || {
+    versionCode: 5,
+    versionName: "1.0.5",
+    downloadUrl: "https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk",
+    forceUpdate: false,
+    releaseNotes: "• Correções, melhorias e novos recursos",
+    minSupportedVersion: 100,
+    fileSizeBytes: 18450000,
+    updatedAt: new Date().toISOString()
+  };
+
   return res.json({
     versionCode: ota.versionCode,
     version_code: ota.versionCode,
@@ -394,25 +427,24 @@ app.get("/api/v1/launcher/version.json", handleVersionJson);
 // -------------------------------------------------------------
 // ENDPOINTS ADMIN (GESTÃO DE REVENDEDORES)
 // -------------------------------------------------------------
-app.get("/api/admin/resellers", (req, res) => {
+app.get("/api/admin/resellers", async (req, res) => {
   disableCache(res);
-  db.reload();
-  const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
+  const resellers = await User.find({ role: "reseller" });
+  const clients = await Client.find({});
   const now = new Date();
 
   return res.json(resellers.map((r: any) => {
-    const myClients = (db.data.clients || []).filter((c: any) => c.resellerId === r.id);
+    const myClients = clients.filter((c: any) => c.resellerId === r.id);
     const activeClients = myClients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length;
     return {
-      ...r,
+      ...r.toObject(),
       totalClients: myClients.length,
       activeClients
     };
   }));
 });
 
-app.post("/api/admin/resellers", (req, res) => {
-  db.reload();
+app.post("/api/admin/resellers", async (req, res) => {
   const { id, name, email, password, resellerToken, clientLimit, status } = req.body;
 
   if (!name || !email) {
@@ -422,7 +454,7 @@ app.post("/api/admin/resellers", (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
 
   if (id) {
-    const user = (db.data.users || []).find((u: any) => u.id === id);
+    const user = await User.findOne({ id });
     if (!user) return res.status(404).json({ message: "Revendedor não encontrado." });
 
     user.name = name;
@@ -432,18 +464,18 @@ app.post("/api/admin/resellers", (req, res) => {
     if (clientLimit !== undefined) user.clientLimit = Number(clientLimit);
     if (status) user.status = status;
 
-    db.save();
+    await user.save();
     return res.json(user);
   } else {
-    // Validação de email duplicado
-    if ((db.data.users || []).some((u: any) => u.email.trim().toLowerCase() === cleanEmail)) {
+    const existing = await User.findOne({ email: new RegExp(`^${cleanEmail}$`, "i") });
+    if (existing) {
       return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
     }
 
     const newResellerId = "usr_rev_" + Date.now();
     const token = resellerToken ? resellerToken.trim().toUpperCase() : `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    const newReseller = {
+    const newReseller = await User.create({
       id: newResellerId,
       name,
       email: cleanEmail,
@@ -453,14 +485,9 @@ app.post("/api/admin/resellers", (req, res) => {
       clientLimit: Number(clientLimit || 50),
       status: status || "active",
       createdAt: new Date().toISOString()
-    };
+    });
 
-    if (!db.data.users) db.data.users = [];
-    db.data.users.push(newReseller);
-
-    // Cria automaticamente um layout exclusivo para este novo revendedor
-    if (!db.data.layouts) db.data.layouts = [];
-    db.data.layouts.push({
+    await Layout.create({
       id: "lay_" + newResellerId,
       resellerId: newResellerId,
       backgroundUrl: defaultBackgrounds[0],
@@ -470,39 +497,34 @@ app.post("/api/admin/resellers", (req, res) => {
       updatedAt: new Date().toISOString()
     });
 
-    db.save();
-    console.log(`[ADMIN] Novo Revendedor criado com sucesso: ${newReseller.name} (Token: ${newReseller.resellerToken})`);
     return res.status(201).json(newReseller);
   }
 });
 
-app.delete("/api/admin/resellers/:id", (req, res) => {
-  db.reload();
+app.delete("/api/admin/resellers/:id", async (req, res) => {
   const { id } = req.params;
-  db.data.users = (db.data.users || []).filter((u: any) => u.id !== id);
-  db.data.layouts = (db.data.layouts || []).filter((l: any) => l.resellerId !== id && l.id !== `lay_${id}`);
-  db.save();
+  await User.deleteOne({ id });
+  await Layout.deleteMany({ $or: [{ resellerId: id }, { id: `lay_${id}` }] });
   return res.json({ status: "success" });
 });
 
 // -------------------------------------------------------------
-// GESTÃO DE CLIENTES (FILTRAGEM POR REVENDA)
+// GESTÃO DE CLIENTES
 // -------------------------------------------------------------
-app.get("/api/reseller/clients", (req, res) => {
+app.get("/api/reseller/clients", async (req, res) => {
   disableCache(res);
-  db.reload();
   const { resellerId } = req.query;
-  let clients = db.data.clients || [];
+  let query: any = {};
 
   if (resellerId && resellerId !== "all" && resellerId !== "usr_master" && resellerId !== "master") {
-    clients = clients.filter((c: any) => c.resellerId === resellerId);
+    query.resellerId = resellerId;
   }
 
+  const clients = await Client.find(query);
   return res.json(clients);
 });
 
-app.post("/api/reseller/clients", (req, res) => {
-  db.reload();
+app.post("/api/reseller/clients", async (req, res) => {
   const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
   const cleanMac = cleanHex(macAddress || deviceToken);
@@ -521,9 +543,13 @@ app.post("/api/reseller/clients", (req, res) => {
     finalExpDate = new Date(Date.now() + 30 * 86400000);
   }
 
-  let client = id 
-    ? db.data.clients.find((c: any) => c.id === id)
-    : db.data.clients.find((c: any) => cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac);
+  let client: any = null;
+  if (id) {
+    client = await Client.findOne({ id });
+  } else {
+    const allClients = await Client.find({});
+    client = allClients.find((c: any) => cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac);
+  }
 
   if (client) {
     client.clientName = clientName;
@@ -534,10 +560,10 @@ app.post("/api/reseller/clients", (req, res) => {
     if (notes !== undefined) client.notes = notes;
     if (resellerId) client.resellerId = resellerId;
 
-    db.save();
+    await client.save();
     return res.json(client);
   } else {
-    const newClient = {
+    const newClient = await Client.create({
       id: "cli_" + Date.now(),
       resellerId: resellerId || "usr_rev_1",
       clientName,
@@ -548,22 +574,18 @@ app.post("/api/reseller/clients", (req, res) => {
       notes: notes || "",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
-    };
+    });
 
-    db.data.clients.unshift(newClient);
-    db.save();
     return res.status(201).json(newClient);
   }
 });
 
-app.post("/api/reseller/clients/renew", (req, res) => {
-  db.reload();
+app.post("/api/reseller/clients/renew", async (req, res) => {
   const { id, macAddress, days } = req.body;
   const cleanMac = cleanHex(macAddress || id);
 
-  const client = (db.data.clients || []).find((c: any) => 
-    c.id === id || cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac
-  );
+  const allClients = await Client.find({});
+  const client = allClients.find((c: any) => c.id === id || cleanHex(c.macAddress) === cleanMac || cleanHex(c.deviceToken) === cleanMac);
 
   if (!client) {
     return res.status(404).json({ message: "Cliente não encontrado para renovação." });
@@ -577,28 +599,25 @@ app.post("/api/reseller/clients/renew", (req, res) => {
   client.expirationDate = new Date(baseDate.getTime() + addDays * 86400000).toISOString();
   client.status = "active";
 
-  db.save();
+  await client.save();
   return res.json(client);
 });
 
-app.delete("/api/reseller/clients/:id", (req, res) => {
-  db.reload();
+app.delete("/api/reseller/clients/:id", async (req, res) => {
   const { id } = req.params;
-  db.data.clients = (db.data.clients || []).filter((c: any) => c.id !== id);
-  db.save();
+  await Client.deleteOne({ id });
   return res.json({ status: "success" });
 });
 
 // -------------------------------------------------------------
-// GESTÃO DE LAYOUTS INDIVIDUAIS POR REVENDA
+// GESTÃO DE LAYOUTS
 // -------------------------------------------------------------
-app.get("/api/reseller/layout/:resellerId", (req, res) => {
-  db.reload();
+app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
-  let layout = (db.data.layouts || []).find((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
+  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
 
   if (!layout) {
-    layout = {
+    layout = await Layout.create({
       id: "lay_" + targetId,
       resellerId: targetId,
       backgroundUrl: defaultBackgrounds[0],
@@ -606,19 +625,16 @@ app.get("/api/reseller/layout/:resellerId", (req, res) => {
       overlayOpacity: 0.35,
       apps: defaultApps,
       updatedAt: new Date().toISOString()
-    };
-    db.data.layouts.push(layout);
-    db.save();
+    });
   }
   return res.json(layout);
 });
 
-app.post("/api/reseller/layout", (req, res) => {
-  db.reload();
+app.post("/api/reseller/layout", async (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
   const targetId = resellerId || "usr_master";
 
-  const updatedLayout = {
+  const updatedData = {
     id: "lay_" + targetId,
     resellerId: targetId,
     backgroundUrl: backgroundUrl || backgrounds?.[0] || defaultBackgrounds[0],
@@ -628,24 +644,24 @@ app.post("/api/reseller/layout", (req, res) => {
     updatedAt: new Date().toISOString()
   };
 
-  const idx = (db.data.layouts || []).findIndex((l: any) => l.resellerId === targetId || l.id === `lay_${targetId}`);
-  if (idx !== -1) db.data.layouts[idx] = updatedLayout;
-  else db.data.layouts.push(updatedLayout);
+  let layout = await Layout.findOneAndUpdate(
+    { $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] },
+    updatedData,
+    { new: true, upsert: true }
+  );
 
-  db.save();
-  return res.json(updatedLayout);
+  return res.json(layout);
 });
 
 // -------------------------------------------------------------
 // AUTENTICAÇÃO E ESTATÍSTICAS
 // -------------------------------------------------------------
-app.post("/api/auth/login", (req, res) => {
-  db.reload();
+app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanPassword = (password || "").trim();
 
-  const user = (db.data.users || []).find((u: any) => u.email.trim().toLowerCase() === cleanEmail);
+  const user = await User.findOne({ email: new RegExp(`^${cleanEmail}$`, "i") });
   if (!user) return res.status(401).json({ message: "Credenciais inválidas." });
 
   const isValid = (cleanPassword === (user.password || "revenda123password").trim()) ||
@@ -659,11 +675,11 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
-app.get("/api/admin/stats", (req, res) => {
-  db.reload();
-  const clients = db.data.clients || [];
-  const resellers = (db.data.users || []).filter((u: any) => u.role === "reseller");
+app.get("/api/admin/stats", async (req, res) => {
+  const clients = await Client.find({});
+  const resellers = await User.find({ role: "reseller" });
   const now = new Date();
+  const ota = await Ota.findOne({ id: "ota_v210" });
 
   return res.json({
     success: true,
@@ -672,44 +688,61 @@ app.get("/api/admin/stats", (req, res) => {
     totalClients: clients.length,
     activeClients: clients.filter((c: any) => new Date(c.expirationDate) > now && c.status === "active").length,
     expiredClients: clients.filter((c: any) => new Date(c.expirationDate) <= now || c.status !== "active").length,
-    otaVersion: db.data.otaVersion?.versionName || "1.0.3",
-    totalApiRequests: (db.data.apiLogs || []).length
+    otaVersion: ota?.versionName || "1.0.5",
+    totalApiRequests: 0
   });
 });
 
-app.get("/api/admin/ota", (req, res) => {
-  db.reload();
-  return res.json(db.data.otaVersion || initialDb.otaVersion);
+app.get("/api/admin/ota", async (req, res) => {
+  const ota = await Ota.findOne({ id: "ota_v210" });
+  return res.json(ota);
 });
 
-app.post("/api/admin/ota", (req, res) => {
-  db.reload();
+app.post("/api/admin/ota", async (req, res) => {
   const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
-  db.data.otaVersion = {
-    ...db.data.otaVersion,
-    versionCode: Number(versionCode || db.data.otaVersion.versionCode),
-    versionName: versionName || db.data.otaVersion.versionName,
-    downloadUrl: downloadUrl || db.data.otaVersion.downloadUrl,
-    forceUpdate: Boolean(forceUpdate),
-    releaseNotes: releaseNotes || db.data.otaVersion.releaseNotes,
-    updatedAt: new Date().toISOString()
-  };
-  db.save();
-  return res.json(db.data.otaVersion);
+  
+  let ota = await Ota.findOne({ id: "ota_v210" });
+  if (!ota) {
+    ota = new Ota({ id: "ota_v210" });
+  }
+
+  ota.versionCode = Number(versionCode || ota.versionCode);
+  ota.versionName = versionName || ota.versionName;
+  ota.downloadUrl = downloadUrl || ota.downloadUrl;
+  ota.forceUpdate = Boolean(forceUpdate);
+  ota.releaseNotes = releaseNotes || ota.releaseNotes;
+  ota.updatedAt = new Date().toISOString();
+
+  await ota.save();
+  return res.json(ota);
 });
 
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
+  if (!MONGO_URI) {
+    console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não está definida no Render!");
+    return;
   }
 
-  app.listen(PORT, () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
+  try {
+    // Aguarda a conexão completa com o MongoDB antes de iniciar o Express
+    await mongoose.connect(MONGO_URI);
+    console.log("📦 Conectado ao MongoDB Atlas com sucesso!");
+    await seedDatabase();
+
+    if (process.env.NODE_ENV !== "production") {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(process.cwd(), "dist");
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
+    }
+
+    app.listen(PORT, () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
+  } catch (err) {
+    console.error("❌ Erro fatal ao conectar ao MongoDB Atlas:", err);
+  }
 }
 
 startServer();
