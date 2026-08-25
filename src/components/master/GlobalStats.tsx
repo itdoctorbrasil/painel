@@ -8,7 +8,6 @@ import {
   DownloadCloud, 
   CheckCircle, 
   XCircle, 
-  Clock, 
   ShieldCheck, 
   ArrowUpRight,
   Tv
@@ -77,13 +76,13 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
           <div className="flex gap-3">
             <button
               onClick={() => onNavigateToTab('resellers')}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
             >
               <Users className="w-4 h-4" /> Gerenciar Revendas
             </button>
             <button
               onClick={() => onNavigateToTab('ota')}
-              className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-700 transition flex items-center gap-2"
+              className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm border border-slate-700 transition flex items-center gap-2 cursor-pointer"
             >
               <DownloadCloud className="w-4 h-4 text-purple-400" /> Atualizar OTA
             </button>
@@ -91,14 +90,17 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards Interativos (Direcionáveis) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Total Revendedores */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div 
+          onClick={() => onNavigateToTab('resellers')}
+          className="bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 shadow-lg transition-all duration-200 cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Revendedores</span>
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-indigo-300 transition">Revendedores</span>
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition">
               <Users className="w-5 h-5" />
             </div>
           </div>
@@ -111,10 +113,13 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
         </div>
 
         {/* Total Clientes Finais */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div 
+          onClick={() => onNavigateToTab('all_clients')}
+          className="bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 rounded-2xl p-5 shadow-lg transition-all duration-200 cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Dispositivos</span>
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-purple-300 transition">Total Dispositivos</span>
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:bg-purple-500/20 transition">
               <Tv className="w-5 h-5" />
             </div>
           </div>
@@ -123,10 +128,13 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
         </div>
 
         {/* Clientes Ativos */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div 
+          onClick={() => onNavigateToTab('all_clients')}
+          className="bg-slate-900/80 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 shadow-lg transition-all duration-200 cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assinaturas Ativas</span>
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-emerald-300 transition">Assinaturas Ativas</span>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition">
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
@@ -137,10 +145,13 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
         </div>
 
         {/* Clientes Expirados */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <div 
+          onClick={() => onNavigateToTab('all_clients')}
+          className="bg-slate-900/80 border border-slate-800 hover:border-rose-500/50 rounded-2xl p-5 shadow-lg transition-all duration-200 cursor-pointer group"
+        >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Expirados / Bloqueados</span>
-            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-rose-300 transition">Expirados / Bloqueados</span>
+            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 group-hover:bg-rose-500/20 transition">
               <UserX className="w-5 h-5" />
             </div>
           </div>
@@ -161,7 +172,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
             </div>
             <button
               onClick={() => onNavigateToTab('resellers')}
-              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
             >
               Ver Todos <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
@@ -201,7 +212,7 @@ export const GlobalStats: React.FC<GlobalStatsProps> = ({
                       <td className="p-3 text-right">
                         <button
                           onClick={() => onNavigateToTab('layout_editor')}
-                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-indigo-500/30"
+                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-indigo-500/30 cursor-pointer"
                         >
                           Ver Layout
                         </button>
