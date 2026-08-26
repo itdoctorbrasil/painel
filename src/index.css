@@ -1,47 +1,66 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   MODO DIURNO PREMIUM (LIGHT MODE HIGH-END)
-   ================================================---------- */
+   MODO DIURNO PREMIUM (LIGHT MODE HIGH-END / SAAS CLEAN)
+   ========================================================== */
 html.light-mode {
   color-scheme: light;
 }
 
 html.light-mode body {
-  background-color: #f8fafc !important; /* Fundo limpo e arejado */
-  color: #0f172a !important;
+  background-color: #f1f5f9 !important; /* Fundo geral cinza-azulado bem suave e elegante */
+  color: #1e293b !important;
 }
 
-/* Painéis e Cards com Branco Puro + Sombra Sufusa Premium */
-html.light-mode .bg-slate-950,
+/* Sidebar e Header com Branco Suave e separação limpa */
 html.light-mode aside {
   background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+html.light-mode header {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* Cards e Seções Principais com Branco Puro e Sombra Difusa Sofisticada */
+html.light-mode .bg-slate-950 {
+  background-color: #f1f5f9 !important;
 }
 
 html.light-mode .bg-slate-900,
 html.light-mode .bg-slate-900\/90,
 html.light-mode .bg-slate-900\/80 {
   background-color: #ffffff !important;
-  color: #0f172a !important;
-  box-shadow: 0 10.5px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03) !important;
 }
 
-/* Bordas delicadas e elegantes */
+/* Sub-blocos internos dentro dos cards (ex: caixas de token) com tom off-white sutil */
+html.light-mode .bg-slate-950\/80,
+html.light-mode .bg-slate-950\/60,
+html.light-mode .bg-slate-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Bordas delicadas e elegantes em todo o painel */
 html.light-mode .border-slate-800,
 html.light-mode .border-slate-800\/80,
 html.light-mode .border-slate-700 {
   border-color: #e2e8f0 !important;
 }
 
-/* Tipografia de Alto Contraste */
+/* Tipografia refinada (evita o preto total chapado) */
 html.light-mode .text-white {
-  color: #090d16 !important;
+  color: #0f172a !important;
 }
 
 html.light-mode .text-slate-300 {
-  color: #334155 !important;
+  color: #475569 !important;
 }
 
 html.light-mode .text-slate-400,
@@ -49,11 +68,11 @@ html.light-mode .text-slate-500 {
   color: #64748b !important;
 }
 
-/* Inputs, Selects e Textareas com Visual Clean */
+/* Inputs, Selects e Textareas com Visual Clean e Borda Suave */
 html.light-mode input,
 html.light-mode select,
 html.light-mode textarea {
-  background-color: #f8fafc !important;
+  background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
@@ -62,13 +81,13 @@ html.light-mode input:focus,
 html.light-mode select:focus,
 html.light-mode textarea:focus {
   background-color: #ffffff !important;
-  border-color: #6366f1 !important; /* Indigo accent */
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
 }
 
-/* Modais e Popups com Profundidade */
+/* Modais e Popups com Profundidade Suave */
 html.light-mode .fixed.inset-0.bg-black\/70,
 html.light-mode .bg-black\/80 {
-  background-color: rgba(15, 23, 42, 0.4) !important;
-  backdrop-filter: blur(8px) !important;
+  background-color: rgba(15, 23, 42, 0.25) !important;
+  backdrop-filter: blur(6px) !important;
 }
