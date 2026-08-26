@@ -176,7 +176,7 @@ curl -X GET "${configEndpointUrl}"`;
               Link de download
             </h3>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Clique no botão abaixo para gerar e copiar o seu link de download(<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) <code className="text-indigo-300 font-mono">luna_{resellerToken}.apk</code>.
+              Clique no botão abaixo para gerar e copiar o seu link de download
             </p>
           </div>
           <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
