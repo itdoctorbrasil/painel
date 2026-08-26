@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </h2>
         <p className="text-xs text-slate-400 mt-0.5">
-          Controle centralizado de layouts, OTA e dispositivos Android TV
+          Obtenha aqui seu link para download ou baixe o Luna Launcher diretamente
         </p>
       </div>
 
