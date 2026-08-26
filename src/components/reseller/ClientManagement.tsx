@@ -34,12 +34,14 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   onOpenApiTester
 }) => {
   const targetResellerId = activeResellerView ? activeResellerView.id : currentUser.id;
+  const targetResellerToken = activeResellerView ? activeResellerView.resellerToken : currentUser.resellerToken;
+  const isMasterView = (currentUser.role === 'master' && !activeResellerView) || currentUser.role === 'usr_master';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientDevice | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // Estado para alternar entre Card e Lista
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -167,8 +169,14 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
+  // Filtro inteligente que suporta tanto o Master quanto o Revendedor (incluindo captura via APK Coringa pelo Token)
   const filtered = clients.filter(c => {
-    if (c.resellerId !== targetResellerId && targetResellerId !== 'usr_master' && targetResellerId !== 'master') return false;
+    if (!isMasterView) {
+      const matchesResellerId = c.resellerId === targetResellerId;
+      // Se o deviceToken ou notes contiver o token do revendedor, ele pertence a esta revenda
+      const matchesToken = targetResellerToken && c.deviceToken && c.deviceToken.includes(targetResellerToken);
+      if (!matchesResellerId && !matchesToken) return false;
+    }
 
     const matchesSearch = 
       c.clientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -281,6 +289,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
             const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             const isExpired = diffDays <= 0 || c.status === 'expired' || c.status === 'suspended';
             const isExpiringSoon = diffDays > 0 && diffDays <= 5;
+            const isNewInstallation = c.clientName.toLowerCase().includes('novo dispositivo') || !c.clientName;
 
             return (
               <div key={c.id} className={`bg-slate-900/90 border rounded-2xl p-5 shadow-xl flex flex-col justify-between transition ${
@@ -296,7 +305,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-extrabold text-white text-base tracking-tight">
-                        {c.clientName}
+                        {c.clientName || 'Novo Dispositivo'}
                       </h3>
                       <p className="text-[11px] font-mono text-slate-400">MAC: {c.macAddress}</p>
                     </div>
@@ -329,6 +338,14 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     </button>
                   </div>
 
+                  {/* Aviso de Nova Instalação Pendente */}
+                  {isNewInstallation && (
+                    <div className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 p-2.5 rounded-xl text-[11px] mb-3 italic flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                      'Nova instalação detectada, aguardando liberação.'
+                    </div>
+                  )}
+
                   {/* Validade Clicável com Calendário */}
                   <div className="text-xs text-slate-300 space-y-1 mb-4">
                     <div 
@@ -357,31 +374,31 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     </span>
                     <div className="grid grid-cols-5 gap-1 text-[10px] font-bold">
                       <button
-                        onClick={() => handleQuickRenew(c.id, 30, c.clientName)}
+                        onClick={() => handleQuickRenew(c.id, 30, c.clientName || 'Dispositivo')}
                         className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center cursor-pointer"
                       >
                         +30d
                       </button>
                       <button
-                        onClick={() => handleQuickRenew(c.id, 90, c.clientName)}
+                        onClick={() => handleQuickRenew(c.id, 90, c.clientName || 'Dispositivo')}
                         className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center cursor-pointer"
                       >
                         +90d
                       </button>
                       <button
-                        onClick={() => handleQuickRenew(c.id, 180, c.clientName)}
+                        onClick={() => handleQuickRenew(c.id, 180, c.clientName || 'Dispositivo')}
                         className="bg-indigo-950/80 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 p-1.5 rounded-lg transition text-center cursor-pointer"
                       >
                         +180d
                       </button>
                       <button
-                        onClick={() => handleQuickRenew(c.id, 365, c.clientName)}
+                        onClick={() => handleQuickRenew(c.id, 365, c.clientName || 'Dispositivo')}
                         className="bg-purple-950/80 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 p-1.5 rounded-lg transition text-center cursor-pointer"
                       >
                         +1Ano
                       </button>
                       <button
-                        onClick={() => handleQuickRenew(c.id, 9999, c.clientName)}
+                        onClick={() => handleQuickRenew(c.id, 9999, c.clientName || 'Dispositivo')}
                         className="bg-emerald-950/80 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 p-1.5 rounded-lg transition text-center cursor-pointer"
                       >
                         Vitalício
@@ -408,7 +425,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </button>
 
                   <button
-                    onClick={() => handleDelete(c.id, c.clientName)}
+                    onClick={() => handleDelete(c.id, c.clientName || 'Dispositivo')}
                     className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg text-xs font-medium transition border border-rose-500/20 cursor-pointer"
                     title="Excluir Dispositivo"
                   >
@@ -445,7 +462,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     return (
                       <tr key={c.id} className="hover:bg-slate-800/40 transition">
                         <td className="p-4 font-extrabold text-white text-sm">
-                          {c.clientName}
+                          {c.clientName || 'Novo Dispositivo'}
                           {c.notes && <div className="text-[10px] text-slate-400 font-normal italic">"{c.notes}"</div>}
                         </td>
                         <td className="p-4 font-mono text-indigo-300">{c.macAddress}</td>
@@ -480,7 +497,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(c.id, c.clientName)}
+                            onClick={() => handleDelete(c.id, c.clientName || 'Dispositivo')}
                             className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg inline-flex items-center transition border border-rose-500/20 cursor-pointer"
                             title="Excluir"
                           >
