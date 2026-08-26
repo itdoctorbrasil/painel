@@ -462,12 +462,30 @@ export default function App() {
             />
           )}
 
-          {/* 3. OTA Updates Management (Master only) */}
-          {activeTab === 'ota' && otaVersion && (
-            <OtaManagement
-              otaVersion={otaVersion}
-              onSaveOtaVersion={handleSaveOtaVersion}
-            />
+          {/* 3. OTA Updates Management (Estritamente Restrito ao Master Admin) */}
+          {activeTab === 'ota' && (
+            currentUser.role === 'master' && !activeResellerView && otaVersion ? (
+              <OtaManagement
+                otaVersion={otaVersion}
+                onSaveOtaVersion={handleSaveOtaVersion}
+              />
+            ) : (
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center space-y-4 max-w-lg mx-auto mt-12 shadow-2xl">
+                <div className="w-16 h-16 bg-rose-500/20 border border-rose-500/40 text-rose-400 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+                  🔒
+                </div>
+                <h3 className="text-xl font-black text-white">Acesso Restrito</h3>
+                <p className="text-xs text-slate-400">
+                  Esta seção de gerenciamento de atualizações OTA é exclusiva para o Administrador Master do sistema.
+                </p>
+                <button
+                  onClick={() => handleTabChange('dashboard')}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition cursor-pointer shadow-lg shadow-indigo-600/30"
+                >
+                  Voltar para a Visão Geral
+                </button>
+              </div>
+            )
           )}
 
           {/* 4. All Clients View (Master) OR Clients View (Reseller) */}
