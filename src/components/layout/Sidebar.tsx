@@ -42,10 +42,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Menu do Revendedor com acesso completo aos Clientes e Instalações Pendentes
   const resellerNav = [
-    { id: 'dashboard', label: 'Visão Geral & Instalações', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
-    { id: 'background_editor', label: 'Backgrounds & Carrossel', icon: ImageIcon },
-    { id: 'apps_editor', label: 'Grade Fixa de Apps', icon: AppWindow },
+    { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
+    { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
     { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
   ];
 
