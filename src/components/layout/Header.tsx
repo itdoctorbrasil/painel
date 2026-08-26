@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Clique para gerenciar atualizações OTA (version.json)"
             >
               <Download className="w-3.5 h-3.5 text-indigo-400 animate-bounce" />
-              <span>Luna v{otaVersion.versionName}</span>
+              <span>Versão atual do Launcher{otaVersion.versionName}</span>
               <span className="bg-indigo-500 text-white text-[10px] font-mono px-1.5 py-0.2 rounded font-bold">
                 Build {otaVersion.versionCode}
               </span>
