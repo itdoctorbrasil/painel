@@ -113,7 +113,7 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   const configEndpointUrl = `${originUrl}/api/v1/launcher/config?token=${encodeURIComponent(testToken)}`;
   const versionEndpointUrl = `${originUrl}/version.json`;
 
-  // URL do APK Coringa Dinâmico com Injeção de Token
+  // URL PARA DOWNLOAD DO LAUNCHER
   const wildCardApkUrl = `${originUrl}/download?token=${encodeURIComponent(resellerToken || '')}`;
 
   const curlCommand = `# 1. Checar Aplicativos (apps.json)
