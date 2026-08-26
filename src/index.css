@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   MODO DIURNO "AI DASHBOARD" (Correção Definitiva de Elementos Escuros)
+   MODO DIURNO "AI DASHBOARD" (Sidebar Escura Restaurada)
    ========================================================== */
 html.light-mode {
   color-scheme: light;
@@ -14,22 +14,62 @@ html.light-mode main {
   color: #090d16 !important;
 }
 
-/* 2. SIDEBAR - Mantém o azul escuro sofisticado */
+/* 2. SIDEBAR - Força o azul escuro original de alto padrão com fontes brancas */
 html.light-mode aside {
   background-color: #111423 !important;
-  color: #94A3B8 !important;
+  color: #CBD5E1 !important;
   border-right: none !important;
+}
+
+/* Restaura todas as cores e fontes de dentro da Sidebar para o padrão escuro legível */
+html.light-mode aside h1,
+html.light-mode aside h2,
+html.light-mode aside span,
+html.light-mode aside p,
+html.light-mode aside div {
+  color: inherit;
 }
 
 html.light-mode aside .text-white {
   color: #FFFFFF !important;
 }
-html.light-mode aside .text-slate-400 {
+
+html.light-mode aside .text-slate-400,
+html.light-mode aside p.text-\[11px\] {
   color: #94A3B8 !important;
 }
-html.light-mode aside .bg-slate-900\/80 {
+
+/* Card de perfil do usuário dentro da sidebar */
+html.light-mode aside .bg-slate-900\/80,
+html.light-mode aside div[class*="rounded-xl"] {
   background-color: #1E2335 !important;
   border-color: #2D3348 !important;
+  color: #FFFFFF !important;
+}
+
+/* Itens de navegação inativos na sidebar */
+html.light-mode aside nav button {
+  color: #94A3B8 !important;
+}
+html.light-mode aside nav button:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #FFFFFF !important;
+}
+html.light-mode aside nav button svg {
+  color: #94A3B8 !important;
+}
+html.light-mode aside nav button:hover svg {
+  color: #FFFFFF !important;
+}
+
+/* Botão "Sair da Conta" no rodapé da sidebar */
+html.light-mode aside button[class*="rose"] {
+  color: #F87171 !important;
+  border-color: rgba(248, 113, 113, 0.2) !important;
+}
+html.light-mode aside button[class*="rose"]:hover {
+  background-color: rgba(248, 113, 113, 0.15) !important;
+  color: #FFFFFF !important;
 }
 
 /* 3. HEADER - Títulos e textos escuros */
@@ -62,7 +102,7 @@ html.light-mode .bg-gradient-to-r.from-slate-900 {
   border-radius: 1.25rem !important;
 }
 
-/* 5. TIPOGRAFIA GERAL EM PRETO PADRÃO */
+/* 5. TIPOGRAFIA GERAL NA ÁREA PRINCIPAL EM PRETO PADRÃO */
 html.light-mode main h1,
 html.light-mode main h2,
 html.light-mode main h3,
@@ -98,16 +138,16 @@ html.light-mode textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
-/* 7. BOTÕES DE RENOVAÇÃO RÁPIDA (Alvo Cirúrgico nos grids de dias) */
+/* 7. BOTÕES DE RENOVAÇÃO RÁPIDA */
 html.light-mode .grid.grid-cols-5 button {
-  background-color: #EEF2FF !important; /* Fundo índigo bem suave */
-  color: #4F46E5 !important;            /* Texto em roxo/índigo forte legível */
+  background-color: #EEF2FF !important;
+  color: #4F46E5 !important;
   border: 1px solid #C7D2FE !important;
   font-weight: 700 !important;
 }
 
 html.light-mode .grid.grid-cols-5 button:hover {
-  background-color: #6366F1 !important; /* Fundo roxo sólido ao passar o mouse */
+  background-color: #6366F1 !important;
   color: #FFFFFF !important;
 }
 
