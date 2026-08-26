@@ -199,7 +199,7 @@ export const AppGridEditor: React.FC<AppGridEditorProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-medium mb-1">Deep Link / Direct Launch (Opcional)</label>
+                      <label className="block text-slate-400 font-medium mb-1">URL de Download</label>
                       <input
                         type="text"
                         value={app.deepLink || ''}
