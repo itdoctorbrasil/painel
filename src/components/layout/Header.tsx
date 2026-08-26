@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'apps_editor':
         return 'Gerenciamento da Grade Fixa de Aplicativos';
       case 'api_tester':
-        return 'Testador de Endpoints REST & JSON';
+        return 'Download Launcher';
       default:
         return 'Painel Luna Launcher';
     }
