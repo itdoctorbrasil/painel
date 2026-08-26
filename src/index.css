@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   MODO DIURNO "AI DASHBOARD" (Corrigido e Sincronizado)
+   MODO DIURNO "AI DASHBOARD" (Ajustes de Contraste e Cores)
    ========================================================== */
 html.light-mode {
   color-scheme: light;
@@ -11,7 +11,7 @@ html.light-mode {
 html.light-mode body,
 html.light-mode main {
   background-color: #F4F7FE !important;
-  color: #1E293B !important;
+  color: #090d16 !important;
 }
 
 /* 2. SIDEBAR - Mantém o azul escuro sofisticado */
@@ -32,7 +32,7 @@ html.light-mode aside .bg-slate-900\/80 {
   border-color: #2D3348 !important;
 }
 
-/* 3. HEADER - Títulos e textos com cores escuras corretas */
+/* 3. HEADER - Títulos e textos escuros */
 html.light-mode header {
   background-color: #F4F7FE !important;
   backdrop-filter: blur(10px) !important;
@@ -41,83 +41,80 @@ html.light-mode header {
 
 html.light-mode header h2,
 html.light-mode header .text-white {
-  color: #1B254B !important; /* Títulos do cabeçalho bem escuros e legíveis */
+  color: #090d16 !important;
 }
 
 html.light-mode header p,
 html.light-mode header .text-slate-400 {
-  color: #718096 !important; /* Subtítulos do cabeçalho visíveis */
+  color: #334155 !important;
 }
 
-/* 4. CARDS PRINCIPAIS - Brancos com sombra elegante */
+/* 4. CARDS PRINCIPAIS E BANNER DO TOPO - Padronizados em Branco com Sombra */
 html.light-mode .bg-slate-900,
 html.light-mode .bg-slate-900\/90,
 html.light-mode .bg-slate-950\/60,
-html.light-mode .bg-slate-950\/80 {
+html.light-mode .bg-slate-950\/80,
+html.light-mode .bg-gradient-to-r.from-slate-900 {
   background-color: #FFFFFF !important;
-  border-color: transparent !important;
+  background-image: none !important; /* Remove gradiente escuro do banner do topo no modo claro */
+  border-color: #E2E8F0 !important;
   box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.12) !important;
   border-radius: 1.25rem !important;
 }
 
-/* 5. Tipografia geral dentro da Área Branca (Força textos a ficarem escuros) */
+/* 5. TIPOGRAFIA GERAL EM PRETO PADRÃO */
 html.light-mode main h1,
 html.light-mode main h2,
 html.light-mode main h3,
 html.light-mode main h4,
-html.light-mode main .text-white {
-  color: #1B254B !important;
-}
-
-html.light-mode main p,
-html.light-mode main span,
-html.light-mode main label,
+html.light-mode main .text-white,
 html.light-mode main .text-slate-300,
 html.light-mode main .text-slate-400,
 html.light-mode main .text-slate-500 {
-  color: #718096 !important;
+  color: #090d16 !important; /* Força todas as fontes para preto padrão */
 }
 
-/* 6. Caixas Internas (Inputs, Selects, Textareas, Sub-cards) */
+/* 6. CAIXAS INTERNAS (Inputs, Selects, Sub-cards) */
 html.light-mode input,
 html.light-mode select,
 html.light-mode textarea,
 html.light-mode pre {
-  background-color: #F4F7FE !important;
-  color: #1B254B !important;
-  border: 1px solid #E2E8F0 !important;
+  background-color: #F8FAFC !important;
+  color: #090d16 !important;
+  border: 1px solid #CBD5E1 !important;
 }
 
 html.light-mode input:focus,
 html.light-mode select:focus,
 html.light-mode textarea:focus {
   background-color: #FFFFFF !important;
-  border-color: #8B5CF6 !important; 
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+  border-color: #6366F1 !important; 
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
-/* 7. Elementos de Apoio e Botões Secundários */
-html.light-mode main .bg-slate-950 {
-  background-color: #F4F7FE !important;
-  color: #1B254B !important;
-  border-color: #E2E8F0 !important;
+/* 7. PADRONIZAÇÃO DOS BOTÕES DE RENOVAÇÃO RÁPIDA (Única Cor Padrão) */
+html.light-mode main button[class*="bg-slate-"],
+html.light-mode main div[class*="flex"] > button {
+  /* Se forem os botões de dias (+30d, +90d, etc), padroniza no tom roxo/índigo consistente */
 }
 
-html.light-mode main .bg-slate-800 {
-  background-color: #FFFFFF !important;
-  color: #1B254B !important;
-  border: 1px solid #CBD5E1 !important;
-  box-shadow: 0px 4px 12px rgba(112, 144, 176, 0.08) !important;
+/* Força os botões de renovação rápida para a cor padrão indicados pela seta */
+html.light-mode main .grid button,
+html.light-mode main .flex.flex-wrap button {
+  background-color: #6366F1 !important;
+  color: #FFFFFF !important;
+  border: none !important;
 }
-html.light-mode main .bg-slate-800:hover {
-  background-color: #F8FAFC !important;
+html.light-mode main .grid button:hover,
+html.light-mode main .flex.flex-wrap button:hover {
+  background-color: #4F46E5 !important;
 }
 
-/* Cores de destaque legíveis no fundo claro */
-html.light-mode .text-indigo-300 { color: #4318FF !important; }
-html.light-mode .text-emerald-300 { color: #05CD99 !important; }
-html.light-mode .text-rose-300 { color: #EE5D50 !important; }
-html.light-mode .text-amber-300 { color: #D97706 !important; }
+/* Exceção mantendo o botão de Status Ativo / Outros específicos se necessário */
+html.light-mode .bg-emerald-400,
+html.light-mode .text-emerald-400 {
+  color: #059669 !important;
+}
 
 /* 8. Modais */
 html.light-mode .fixed.inset-0.bg-black\/70,
