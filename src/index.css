@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   MODO DIURNO "AI DASHBOARD" (Inspirado na Referência)
+   MODO DIURNO "AI DASHBOARD" (Corrigido e Sincronizado)
    ========================================================== */
 html.light-mode {
   color-scheme: light;
@@ -10,18 +10,17 @@ html.light-mode {
 /* 1. Fundo da tela inteira (Área de conteúdo principal) */
 html.light-mode body,
 html.light-mode main {
-  background-color: #F4F7FE !important; /* Fundo cinza-azulado muito claro e moderno */
+  background-color: #F4F7FE !important;
   color: #1E293B !important;
 }
 
-/* 2. SIDEBAR - Mantém escura e sofisticada */
+/* 2. SIDEBAR - Mantém o azul escuro sofisticado */
 html.light-mode aside {
-  background-color: #111423 !important; /* Azul marinho muito escuro / quase preto */
+  background-color: #111423 !important;
   color: #94A3B8 !important;
   border-right: none !important;
 }
 
-/* Tipografia e elementos da Sidebar escura */
 html.light-mode aside .text-white {
   color: #FFFFFF !important;
 }
@@ -29,18 +28,28 @@ html.light-mode aside .text-slate-400 {
   color: #94A3B8 !important;
 }
 html.light-mode aside .bg-slate-900\/80 {
-  background-color: #1E2335 !important; /* Fundo do card de usuário na sidebar */
+  background-color: #1E2335 !important;
   border-color: #2D3348 !important;
 }
 
-/* 3. HEADER - Fundo leve para fundir com a área de trabalho */
+/* 3. HEADER - Títulos e textos com cores escuras corretas */
 html.light-mode header {
   background-color: #F4F7FE !important;
   backdrop-filter: blur(10px) !important;
   border-bottom-color: transparent !important;
 }
 
-/* 4. CARDS PRINCIPAIS - Brancos com sombra de elevação estilo SaaS */
+html.light-mode header h2,
+html.light-mode header .text-white {
+  color: #1B254B !important; /* Títulos do cabeçalho bem escuros e legíveis */
+}
+
+html.light-mode header p,
+html.light-mode header .text-slate-400 {
+  color: #718096 !important; /* Subtítulos do cabeçalho visíveis */
+}
+
+/* 4. CARDS PRINCIPAIS - Brancos com sombra elegante */
 html.light-mode .bg-slate-900,
 html.light-mode .bg-slate-900\/90,
 html.light-mode .bg-slate-950\/60,
@@ -51,17 +60,25 @@ html.light-mode .bg-slate-950\/80 {
   border-radius: 1.25rem !important;
 }
 
-/* 5. Tipografia dentro da Área Branca (Textos escuros) */
+/* 5. Tipografia geral dentro da Área Branca (Força textos a ficarem escuros) */
+html.light-mode main h1,
+html.light-mode main h2,
+html.light-mode main h3,
+html.light-mode main h4,
 html.light-mode main .text-white {
-  color: #1B254B !important; /* Títulos em azul escuro premium */
+  color: #1B254B !important;
 }
+
+html.light-mode main p,
+html.light-mode main span,
+html.light-mode main label,
 html.light-mode main .text-slate-300,
 html.light-mode main .text-slate-400,
 html.light-mode main .text-slate-500 {
-  color: #8F9BBA !important; /* Subtítulos em cinza macio */
+  color: #718096 !important;
 }
 
-/* 6. Caixas Internas (Inputs, Selects, Textareas e Pre) */
+/* 6. Caixas Internas (Inputs, Selects, Textareas, Sub-cards) */
 html.light-mode input,
 html.light-mode select,
 html.light-mode textarea,
@@ -71,7 +88,6 @@ html.light-mode pre {
   border: 1px solid #E2E8F0 !important;
 }
 
-/* Foco nas caixas puxando para o Roxo/Índigo */
 html.light-mode input:focus,
 html.light-mode select:focus,
 html.light-mode textarea:focus {
@@ -80,7 +96,7 @@ html.light-mode textarea:focus {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
 }
 
-/* 7. Botões e Elementos Secundários */
+/* 7. Elementos de Apoio e Botões Secundários */
 html.light-mode main .bg-slate-950 {
   background-color: #F4F7FE !important;
   color: #1B254B !important;
@@ -97,13 +113,13 @@ html.light-mode main .bg-slate-800:hover {
   background-color: #F8FAFC !important;
 }
 
-/* Cores de destaque para texto no modo claro */
+/* Cores de destaque legíveis no fundo claro */
 html.light-mode .text-indigo-300 { color: #4318FF !important; }
 html.light-mode .text-emerald-300 { color: #05CD99 !important; }
 html.light-mode .text-rose-300 { color: #EE5D50 !important; }
-html.light-mode .text-amber-300 { color: #FFCE20 !important; }
+html.light-mode .text-amber-300 { color: #D97706 !important; }
 
-/* 8. Modais e Popups */
+/* 8. Modais */
 html.light-mode .fixed.inset-0.bg-black\/70,
 html.light-mode .bg-black\/80 {
   background-color: rgba(11, 20, 55, 0.4) !important;
