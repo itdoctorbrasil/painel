@@ -113,8 +113,8 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   const configEndpointUrl = `${originUrl}/api/v1/launcher/config?token=${encodeURIComponent(testToken)}`;
   const versionEndpointUrl = `${originUrl}/version.json`;
 
-  // URL PARA DOWNLOAD DO LAUNCHER
-  const wildCardApkUrl = `${originUrl}/download?token=${encodeURIComponent(resellerToken || '')}`;
+  // URL DIRETA DO APK OFICIAL COM O TOKEN DA REVENDA
+  const wildCardApkUrl = `https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk?token=${encodeURIComponent(resellerToken || '')}`;
 
   const curlCommand = `# 1. Checar Aplicativos (apps.json)
 curl -X GET "${appsEndpointUrl}"
@@ -164,7 +164,7 @@ curl -X GET "${configEndpointUrl}"`;
         </div>
       </div>
 
-      {/* NOVA SEÇÃO: APK CORINGA / LINK DINÂMICO POR REVENDA */}
+      {/* NOVA SEÇÃO: APK CORINGA / LINK DIRETO DO APK COM TOKEN */}
       <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -173,10 +173,10 @@ curl -X GET "${configEndpointUrl}"`;
             </span>
             <h3 className="font-extrabold text-white text-lg mt-1 flex items-center gap-2">
               <DownloadCloud className="w-5 h-5 text-indigo-400" />
-              Link do APK Coringa Personalizado
+              Link Direto do APK Coringa
             </h3>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Envie este link para os seus clientes finais. Ao instalar o Luna Launcher por este link, o aplicativo reconhecerá o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) e cadastrará o dispositivo automaticamente na sua conta de revenda.
+              Clique no botão abaixo para gerar e copiar o link de download direto do instalador com o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) embutido.
             </p>
           </div>
           <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
@@ -185,19 +185,13 @@ curl -X GET "${configEndpointUrl}"`;
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 pt-2">
-          <input
-            type="text"
-            readOnly
-            value={wildCardApkUrl}
-            className="flex-1 bg-slate-950 border border-slate-800 text-indigo-300 font-mono text-xs rounded-xl p-3 focus:outline-none"
-          />
+        <div className="pt-2">
           <button
             onClick={handleCopyWildcardLink}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer shrink-0"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer w-full sm:w-auto"
           >
             {copiedLink ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-            <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link do APK'}</span>
+            <span>{copiedLink ? 'Link do APK Copiado com Sucesso! 🚀' : 'Gerar e Copiar Link do APK Coringa'}</span>
           </button>
         </div>
       </div>
