@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, ClientDevice, LauncherConfigResponse, LauncherVersionResponse } from '../../types';
 import { fetchLauncherConfig, fetchLauncherVersion } from '../../services/api';
-import { Code2, Play, Copy, Check, ExternalLink, RefreshCw, Key, ShieldCheck, Terminal, Cpu } from 'lucide-react';
+import { Code2, Play, Copy, Check, ExternalLink, RefreshCw, Key, ShieldCheck, Terminal, Cpu, DownloadCloud, QrCode } from 'lucide-react';
 import { JsonViewerModal } from '../common/JsonViewerModal';
 
 interface ApiTesterProps {
@@ -31,6 +31,7 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   const [imgResponse, setImgResponse] = useState<any>(null);
 
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [activeModalData, setActiveModalData] = useState<{ title: string; url: string; data: any }>({ title: '', url: '', data: null });
 
@@ -112,6 +113,9 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   const configEndpointUrl = `${originUrl}/api/v1/launcher/config?token=${encodeURIComponent(testToken)}`;
   const versionEndpointUrl = `${originUrl}/version.json`;
 
+  // URL do APK Coringa Dinâmico com Injeção de Token
+  const wildCardApkUrl = `${originUrl}/download?token=${encodeURIComponent(resellerToken || '')}`;
+
   const curlCommand = `# 1. Checar Aplicativos (apps.json)
 curl -X GET "${appsEndpointUrl}"
 
@@ -130,6 +134,12 @@ curl -X GET "${configEndpointUrl}"`;
     setTimeout(() => setCopiedCurl(false), 2000);
   };
 
+  const handleCopyWildcardLink = () => {
+    navigator.clipboard.writeText(wildCardApkUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const openModalFor = (title: string, url: string, data: any) => {
     setActiveModalData({ title, url, data });
     setShowJsonModal(true);
@@ -142,15 +152,53 @@ curl -X GET "${configEndpointUrl}"`;
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div>
           <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1.5 mb-2">
-            <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Documentação da API REST para Android (Java / Kotlin)
+            <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Integração & Token da Revenda
           </span>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <Code2 className="w-7 h-7 text-indigo-400" />
-            Endpoints de Integração do Luna Launcher
+            APK Coringa & Endpoints REST do Luna Launcher
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
-            Utilize estes endpoints REST no aplicativo Android do Luna Launcher para carregar as imagens de fundo, os 5 aplicativos da grade inicial e checar atualizações OTA.
+            Gerencie o link de instalação exclusiva da sua revenda e teste os endpoints REST para Android (Java / Kotlin).
           </p>
+        </div>
+      </div>
+
+      {/* NOVA SEÇÃO: APK CORINGA / LINK DINÂMICO POR REVENDA */}
+      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <span className="bg-indigo-500 text-white text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+              White-Label Automático
+            </span>
+            <h3 className="font-extrabold text-white text-lg mt-1 flex items-center gap-2">
+              <DownloadCloud className="w-5 h-5 text-indigo-400" />
+              Link do APK Coringa Personalizado
+            </h3>
+            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+              Envie este link para os seus clientes finais. Ao instalar o Luna Launcher por este link, o aplicativo reconhecerá o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) e cadastrará o dispositivo automaticamente na sua conta de revenda.
+            </p>
+          </div>
+          <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
+            <span className="block text-[10px] text-slate-400 font-mono">SEU TOKEN ATIVO</span>
+            <span className="text-xs font-mono font-bold text-amber-300">{resellerToken}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+          <input
+            type="text"
+            readOnly
+            value={wildCardApkUrl}
+            className="flex-1 bg-slate-950 border border-slate-800 text-indigo-300 font-mono text-xs rounded-xl p-3 focus:outline-none"
+          />
+          <button
+            onClick={handleCopyWildcardLink}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer shrink-0"
+          >
+            {copiedLink ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link do APK'}</span>
+          </button>
         </div>
       </div>
 
@@ -177,7 +225,7 @@ curl -X GET "${configEndpointUrl}"`;
               <button
                 onClick={() => runAllTests(testToken)}
                 disabled={loadingConfig || loadingApps || loadingImg}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shrink-0 shadow-lg shadow-indigo-600/30"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shrink-0 shadow-lg shadow-indigo-600/30 cursor-pointer"
               >
                 {loadingConfig ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                 <span>Testar Todos</span>
@@ -259,7 +307,7 @@ curl -X GET "${configEndpointUrl}"`;
             <span className="text-slate-500 font-mono">Response HTTP 200 OK</span>
             <button
               onClick={() => openModalFor('Grade de Aplicativos (apps.json)', appsEndpointUrl, appsResponse)}
-              className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-emerald-500/30"
+              className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-emerald-500/30 cursor-pointer"
             >
               Expandir JSON
             </button>
@@ -314,7 +362,7 @@ curl -X GET "${configEndpointUrl}"`;
             <span className="text-slate-500 font-mono">Response HTTP 200 OK</span>
             <button
               onClick={() => openModalFor('Imagem de Fundo (img.json)', imgEndpointUrl, imgResponse)}
-              className="bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-blue-500/30"
+              className="bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-blue-500/30 cursor-pointer"
             >
               Expandir JSON
             </button>
@@ -369,7 +417,7 @@ curl -X GET "${configEndpointUrl}"`;
             <span className="text-slate-500 font-mono">Response HTTP 200 OK</span>
             <button
               onClick={() => openModalFor('Atualizações OTA (version.json)', versionEndpointUrl, versionResponse)}
-              className="bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-purple-500/30"
+              className="bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-purple-500/30 cursor-pointer"
             >
               Expandir JSON
             </button>
@@ -424,7 +472,7 @@ curl -X GET "${configEndpointUrl}"`;
             <span className="text-slate-500 font-mono">Response HTTP 200 OK</span>
             <button
               onClick={() => openModalFor('Configuração Completa do Launcher', configEndpointUrl, configResponse)}
-              className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-indigo-500/30"
+              className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg font-semibold transition border border-indigo-500/30 cursor-pointer"
             >
               Expandir JSON
             </button>
@@ -442,7 +490,7 @@ curl -X GET "${configEndpointUrl}"`;
           </div>
           <button
             onClick={handleCopyCurl}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 cursor-pointer"
           >
             {copiedCurl ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copiedCurl ? 'Copiado!' : 'Copiar cURL'}</span>
