@@ -152,7 +152,7 @@ curl -X GET "${configEndpointUrl}"`;
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div>
           <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1.5 mb-2">
-            <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Integração & Token da Revenda
+            <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Gerenciamento
           </span>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <Code2 className="w-7 h-7 text-indigo-400" />
