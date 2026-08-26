@@ -58,6 +58,9 @@ export default function App() {
     return params.get('tab') || 'dashboard';
   });
 
+  // Estado para controlar o filtro ao navegar para a aba de Clientes via cards
+  const [clientFilter, setClientFilter] = useState<'all' | 'active' | 'expired'>('all');
+
   // Master impersonation / view mode
   const [activeResellerView, setActiveResellerView] = useState<User | null>(null);
 
@@ -373,37 +376,73 @@ export default function App() {
                     </p>
                   </div>
                   <button
-                    onClick={() => handleTabChange('clients')}
+                    onClick={() => {
+                      setClientFilter('all');
+                      handleTabChange('clients');
+                    }}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-indigo-600/30 cursor-pointer"
                   >
                     Gerenciar Meus Clientes
                   </button>
                 </div>
 
-                {/* Cards de Métricas Rápidas da Revenda */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl">
-                    <span className="text-slate-400 text-xs font-mono uppercase">Total de Dispositivos</span>
-                    <h3 className="text-3xl font-black text-white mt-1">
-                      {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id)).length}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-1">TV Boxes e Smart TVs cadastradas</p>
+                {/* Cards Interativos da Revenda Alinhados */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                  {/* Card 1: Total */}
+                  <div 
+                    onClick={() => {
+                      setClientFilter('all');
+                      handleTabChange('clients');
+                    }}
+                    className="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 p-6 rounded-2xl shadow-xl transition cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <span className="text-slate-400 text-xs font-mono uppercase tracking-wider group-hover:text-indigo-300 transition block mb-2">
+                        Total de Dispositivos ➔
+                      </span>
+                      <h3 className="text-4xl font-black text-white">
+                        {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id)).length}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-4">TV Boxes e Smart TVs cadastradas</p>
                   </div>
 
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl">
-                    <span className="text-emerald-400 text-xs font-mono uppercase">Assinaturas Ativas</span>
-                    <h3 className="text-3xl font-black text-emerald-400 mt-1">
-                      {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id) && c.status === 'active' && new Date(c.expirationDate) >= new Date()).length}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-1">Dispositivos com acesso liberado</p>
+                  {/* Card 2: Ativos */}
+                  <div 
+                    onClick={() => {
+                      setClientFilter('active');
+                      handleTabChange('clients');
+                    }}
+                    className="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 p-6 rounded-2xl shadow-xl transition cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <span className="text-emerald-400 text-xs font-mono uppercase tracking-wider group-hover:underline block mb-2">
+                        Assinaturas Ativas ➔
+                      </span>
+                      <h3 className="text-4xl font-black text-emerald-400">
+                        {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id) && c.status === 'active' && new Date(c.expirationDate) >= new Date()).length}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-4">Dispositivos com acesso liberado</p>
                   </div>
 
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl">
-                    <span className="text-rose-400 text-xs font-mono uppercase">Expirados / Bloqueados</span>
-                    <h3 className="text-3xl font-black text-rose-400 mt-1">
-                      {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id) && (c.status === 'expired' || c.status === 'suspended' || new Date(c.expirationDate) < new Date())).length}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-1">Exigem renovação de plano</p>
+                  {/* Card 3: Expirados */}
+                  <div 
+                    onClick={() => {
+                      setClientFilter('expired');
+                      handleTabChange('clients');
+                    }}
+                    className="bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 p-6 rounded-2xl shadow-xl transition cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <span className="text-rose-400 text-xs font-mono uppercase tracking-wider group-hover:underline block mb-2">
+                        Expirados / Bloqueados ➔
+                      </span>
+                      <h3 className="text-4xl font-black text-rose-400">
+                        {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id) && (c.status === 'expired' || c.status === 'suspended' || new Date(c.expirationDate) < new Date())).length}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-4">Exigem renovação de plano</p>
                   </div>
                 </div>
               </div>
@@ -441,6 +480,7 @@ export default function App() {
               onRenewClient={handleRenewClient}
               onDeleteClient={handleDeleteClient}
               onOpenApiTester={handleOpenApiTester}
+              initialStatusFilter={clientFilter}
             />
           )}
 
