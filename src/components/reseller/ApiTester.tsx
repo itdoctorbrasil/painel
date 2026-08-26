@@ -37,7 +37,7 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
           <div>
             <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
               <DownloadCloud className="w-6 h-6 text-indigo-400" />
-              Download Launcher
+              Link de donwload (URL)
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
               Gere o link exclusivo de instalação da revenda ou baixe diretamente o pacote configurado com o seu token.
@@ -65,7 +65,7 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
         <div>
           <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
             <DownloadCloud className="w-6 h-6 text-indigo-400" />
-            APK Coringa da Revenda
+            Download Launcher
           </h3>
           <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
             Clique no botão abaixo para baixar o arquivo instalador do Luna Launcher diretamente para o seu dispositivo com o token da revenda embutido.
