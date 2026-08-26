@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   MODO DIURNO "AI DASHBOARD" (Ajustes de Contraste e Cores)
+   MODO DIURNO "AI DASHBOARD" (Correção Definitiva de Elementos Escuros)
    ========================================================== */
 html.light-mode {
   color-scheme: light;
@@ -56,7 +56,7 @@ html.light-mode .bg-slate-950\/60,
 html.light-mode .bg-slate-950\/80,
 html.light-mode .bg-gradient-to-r.from-slate-900 {
   background-color: #FFFFFF !important;
-  background-image: none !important; /* Remove gradiente escuro do banner do topo no modo claro */
+  background-image: none !important;
   border-color: #E2E8F0 !important;
   box-shadow: 0px 10px 30px rgba(112, 144, 176, 0.12) !important;
   border-radius: 1.25rem !important;
@@ -71,10 +71,16 @@ html.light-mode main .text-white,
 html.light-mode main .text-slate-300,
 html.light-mode main .text-slate-400,
 html.light-mode main .text-slate-500 {
-  color: #090d16 !important; /* Força todas as fontes para preto padrão */
+  color: #090d16 !important;
 }
 
-/* 6. CAIXAS INTERNAS (Inputs, Selects, Sub-cards) */
+/* 6. CAIXAS INTERNAS ESPECÍFICAS (Token, Validade, Inputs) */
+html.light-mode .bg-slate-950 {
+  background-color: #F8FAFC !important;
+  color: #090d16 !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
 html.light-mode input,
 html.light-mode select,
 html.light-mode textarea,
@@ -92,29 +98,24 @@ html.light-mode textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
-/* 7. PADRONIZAÇÃO DOS BOTÕES DE RENOVAÇÃO RÁPIDA (Única Cor Padrão) */
-html.light-mode main button[class*="bg-slate-"],
-html.light-mode main div[class*="flex"] > button {
-  /* Se forem os botões de dias (+30d, +90d, etc), padroniza no tom roxo/índigo consistente */
+/* 7. BOTÕES DE RENOVAÇÃO RÁPIDA (Alvo Cirúrgico nos grids de dias) */
+html.light-mode .grid.grid-cols-5 button {
+  background-color: #EEF2FF !important; /* Fundo índigo bem suave */
+  color: #4F46E5 !important;            /* Texto em roxo/índigo forte legível */
+  border: 1px solid #C7D2FE !important;
+  font-weight: 700 !important;
 }
 
-/* Força os botões de renovação rápida para a cor padrão indicados pela seta */
-html.light-mode main .grid button,
-html.light-mode main .flex.flex-wrap button {
-  background-color: #6366F1 !important;
+html.light-mode .grid.grid-cols-5 button:hover {
+  background-color: #6366F1 !important; /* Fundo roxo sólido ao passar o mouse */
   color: #FFFFFF !important;
-  border: none !important;
-}
-html.light-mode main .grid button:hover,
-html.light-mode main .flex.flex-wrap button:hover {
-  background-color: #4F46E5 !important;
 }
 
-/* Exceção mantendo o botão de Status Ativo / Outros específicos se necessário */
-html.light-mode .bg-emerald-400,
-html.light-mode .text-emerald-400 {
-  color: #059669 !important;
-}
+/* Cores específicas para textos de destaque no modo claro */
+html.light-mode .text-indigo-300 { color: #4F46E5 !important; }
+html.light-mode .text-amber-300  { color: #B45309 !important; }
+html.light-mode .text-emerald-300{ color: #047857 !important; }
+html.light-mode .text-rose-300    { color: #BE123C !important; }
 
 /* 8. Modais */
 html.light-mode .fixed.inset-0.bg-black\/70,
