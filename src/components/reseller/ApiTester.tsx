@@ -169,7 +169,7 @@ curl -X GET "${configEndpointUrl}"`;
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <span className="bg-indigo-500 text-white text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-              White-Label Automático
+              
             </span>
             <h3 className="font-extrabold text-white text-lg mt-1 flex items-center gap-2">
               <DownloadCloud className="w-5 h-5 text-indigo-400" />
