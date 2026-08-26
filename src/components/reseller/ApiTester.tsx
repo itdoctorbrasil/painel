@@ -156,10 +156,10 @@ curl -X GET "${configEndpointUrl}"`;
           </span>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <Code2 className="w-7 h-7 text-indigo-400" />
-            APK Coringa & Endpoints REST do Luna Launcher
+            Download Luna Launcher
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
-            Gerencie o link de instalação exclusiva da sua revenda e teste os endpoints REST para Android (Java / Kotlin).
+            Gerencie o link de instalação exclusiva da sua revenda .
           </p>
         </div>
       </div>
@@ -173,10 +173,10 @@ curl -X GET "${configEndpointUrl}"`;
             </span>
             <h3 className="font-extrabold text-white text-lg mt-1 flex items-center gap-2">
               <DownloadCloud className="w-5 h-5 text-indigo-400" />
-              Link Dinâmico do APK Coringa
+              Link de download
             </h3>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Clique no botão abaixo para gerar e copiar o link de download do instalador personalizado com o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>). O arquivo será baixado como <code className="text-indigo-300 font-mono">luna_{resellerToken}.apk</code>.
+              Clique no botão abaixo para gerar e copiar o seu link de download(<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) <code className="text-indigo-300 font-mono">luna_{resellerToken}.apk</code>.
             </p>
           </div>
           <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
