@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Backgrounds & Carrossel', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade Fixa de Apps', icon: AppWindow },
-    { id: 'api_tester', label: 'APK Coringa & Integração', icon: Code2 }
+    { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
   ];
 
   const navItems = isMaster ? masterNav : resellerNav;
