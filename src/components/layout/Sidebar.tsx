@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isMaster = currentUser.role === 'master' && !activeResellerView;
 
-  // Menu do Master Admin (separando Backgrounds e Apps)
+  // Menu do Master Admin
   const masterNav = [
     { id: 'dashboard', label: 'Estatísticas Globais', icon: LayoutDashboard },
     { id: 'resellers', label: 'Revendedores', icon: Users },
@@ -40,13 +40,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
   ];
 
-  // Menu do Revendedor (separando Backgrounds e Apps)
+  // Menu do Revendedor com acesso completo aos Clientes e Instalações Pendentes
   const resellerNav = [
-    { id: 'dashboard', label: 'Meu Painel', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Visão Geral & Instalações', icon: LayoutDashboard },
+    { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Backgrounds & Carrossel', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade Fixa de Apps', icon: AppWindow },
-    { id: 'clients', label: 'Meus Clientes & Validades', icon: UserCheck },
-    { id: 'api_tester', label: 'Integração & Token Luna', icon: Code2 }
+    { id: 'api_tester', label: 'APK Coringa & Integração', icon: Code2 }
   ];
 
   const navItems = isMaster ? masterNav : resellerNav;
