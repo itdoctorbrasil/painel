@@ -29,55 +29,55 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 w-full">
       
-      {/* SEÇÃO SUPERIOR: Gerenciamento do Link / Cópia com o mesmo formato de frame */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <DownloadCloud className="w-7 h-7 text-indigo-400" />
-            Download Launcher
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mt-1">
-            Gere o link exclusivo de instalação da revenda ou baixe diretamente o pacote configurado com o seu token.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
-            <span className="block text-[9px] text-slate-400 font-mono">SEU TOKEN ATIVO</span>
-            <span className="text-xs font-mono font-bold text-amber-300">{resellerToken}</span>
+      {/* Bloco 1: Download Launcher (Copiar Link) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row justify-between items-start gap-6">
+        <div className="space-y-6 flex-1">
+          <div>
+            <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
+              <DownloadCloud className="w-6 h-6 text-indigo-400" />
+              Download Launcher
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
+              Gere o link exclusivo de instalação da revenda ou baixe diretamente o pacote configurado com o seu token.
+            </p>
           </div>
-
-          {/* Botão com o mesmo formato de frame e moldura do Baixar Launcher */}
+          
           <button
             onClick={handleCopyWildcardLink}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 border border-slate-700 cursor-pointer shadow-lg"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 border border-slate-700 cursor-pointer shadow-lg w-fit"
           >
             {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-indigo-400" />}
             <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link de Instalação'}</span>
           </button>
         </div>
+
+        {/* Token Badge à direita */}
+        <div className="bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-xl text-right shrink-0 mt-2 sm:mt-0">
+          <span className="block text-[9px] text-slate-400 font-mono uppercase tracking-wider mb-0.5">Seu Token Ativo</span>
+          <span className="text-sm font-mono font-bold text-amber-300">{resellerToken}</span>
+        </div>
       </div>
 
-      {/* SEÇÃO INFERIOR: Download Direto do APK */}
-      <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-8 shadow-xl space-y-6">
+      {/* Bloco 2: APK Coringa da Revenda (Download Direto) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
         <div>
           <h3 className="font-extrabold text-white text-xl flex items-center gap-2">
             <DownloadCloud className="w-6 h-6 text-indigo-400" />
             APK Coringa da Revenda
           </h3>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl leading-relaxed">
             Clique no botão abaixo para baixar o arquivo instalador do Luna Launcher diretamente para o seu dispositivo com o token da revenda embutido.
           </p>
         </div>
 
-        <div className="pt-2">
+        <div>
           <a
             href={wildCardApkUrl}
             target="_blank"
             rel="noreferrer"
-            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition inline-flex items-center justify-center gap-2 border border-slate-700 cursor-pointer shadow-lg"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition inline-flex items-center justify-center gap-2 border border-slate-700 cursor-pointer shadow-lg w-fit"
           >
             <ExternalLink className="w-4 h-4 text-indigo-400" />
             <span>Baixar Launcher</span>
