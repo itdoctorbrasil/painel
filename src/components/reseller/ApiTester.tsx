@@ -113,8 +113,8 @@ export const ApiTester: React.FC<ApiTesterProps> = ({
   const configEndpointUrl = `${originUrl}/api/v1/launcher/config?token=${encodeURIComponent(testToken)}`;
   const versionEndpointUrl = `${originUrl}/version.json`;
 
-  // URL DIRETA DO APK OFICIAL COM O TOKEN DA REVENDA
-  const wildCardApkUrl = `https://itdoctorbrasil.site/Launchers/Luna/apps/update.apk?token=${encodeURIComponent(resellerToken || '')}`;
+  // URL DO SCRIPT PHP DINÂMICO QUE RENOMEIA O APK COM O TOKEN DA REVENDA
+  const wildCardApkUrl = `https://itdoctorbrasil.site/Launchers/Luna/download.php?token=${encodeURIComponent(resellerToken || '')}`;
 
   const curlCommand = `# 1. Checar Aplicativos (apps.json)
 curl -X GET "${appsEndpointUrl}"
@@ -164,7 +164,7 @@ curl -X GET "${configEndpointUrl}"`;
         </div>
       </div>
 
-      {/* NOVA SEÇÃO: APK CORINGA / LINK DIRETO DO APK COM TOKEN */}
+      {/* NOVA SEÇÃO: APK CORINGA / LINK DINÂMICO PHP */}
       <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -173,10 +173,10 @@ curl -X GET "${configEndpointUrl}"`;
             </span>
             <h3 className="font-extrabold text-white text-lg mt-1 flex items-center gap-2">
               <DownloadCloud className="w-5 h-5 text-indigo-400" />
-              Link Direto do APK Coringa
+              Link Dinâmico do APK Coringa
             </h3>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Clique no botão abaixo para gerar e copiar o link de download direto do instalador com o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>) embutido.
+              Clique no botão abaixo para gerar e copiar o link de download do instalador personalizado com o seu token (<strong className="text-indigo-300 font-mono">{resellerToken}</strong>). O arquivo será baixado como <code className="text-indigo-300 font-mono">luna_{resellerToken}.apk</code>.
             </p>
           </div>
           <div className="bg-indigo-900/40 border border-indigo-500/30 px-3 py-2 rounded-xl text-right">
@@ -191,7 +191,7 @@ curl -X GET "${configEndpointUrl}"`;
             className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer w-full sm:w-auto"
           >
             {copiedLink ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-            <span>{copiedLink ? 'Link do APK Copiado com Sucesso! 🚀' : 'Gerar e Copiar Link do APK Coringa'}</span>
+            <span>{copiedLink ? 'Link Copiado com Sucesso! 🚀' : 'Gerar e Copiar Link do APK Coringa'}</span>
           </button>
         </div>
       </div>
