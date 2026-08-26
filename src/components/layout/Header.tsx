@@ -53,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'background_editor':
         return 'Gerenciamento de Backgrounds & Carrossel HD';
       case 'apps_editor':
-        return 'Gerenciamento da Grade Fixa de Aplicativos';
+        return 'Gerencie aqui os aplicativos fixos';
       case 'api_tester':
         return 'Download Launcher';
       default:
