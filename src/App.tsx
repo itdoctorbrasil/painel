@@ -33,6 +33,7 @@ import { BackgroundEditor } from './components/reseller/BackgroundEditor';
 import { AppGridEditor } from './components/reseller/AppGridEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
+import { WhatsappConfig } from './components/reseller/WhatsappConfig'; // <--- IMPORTANTE: Importa a tela do QR Code WhatsApp
 
 import { LogIn, Lock, Mail } from 'lucide-react';
 
@@ -522,7 +523,15 @@ export default function App() {
             />
           )}
 
-          {/* 7. API Tester & Documentation */}
+          {/* 7. Configuração do QR Code WhatsApp */}
+          {activeTab === 'whatsapp_qr' && (
+            <WhatsappConfig
+              currentUser={currentUser}
+              activeResellerView={activeResellerView}
+            />
+          )}
+
+          {/* 8. API Tester & Documentation */}
           {activeTab === 'api_tester' && (
             <ApiTester
               currentUser={currentUser}
