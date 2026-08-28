@@ -27,7 +27,7 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose
+// Definição dos Schemas do Mongoose com suporte a whatsapp
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema({
   resellerToken: String,
   clientLimit: Number,
   status: String,
+  whatsapp: String,
   createdAt: String,
   lastLogin: String
 });
@@ -111,14 +112,7 @@ const disableCache = (res: express.Response) => {
   res.setHeader("Expires", "0");
 };
 
-function normalizeResellerId(id?: string): string {
-  if (!id || id === "master" || id === "all" || id === "usr_master") {
-    return "usr_master";
-  }
-  return id;
-}
-
-// Seed seguro: apenas cria o Master e OTA padrões se o banco estiver totalmente vazio
+// Seed seguro: cria o Master e OTA padrões se o banco estiver totalmente vazio
 async function seedDatabase() {
   const masterExists = await User.findOne({ id: "usr_master" });
   if (!masterExists) {
@@ -129,6 +123,7 @@ async function seedDatabase() {
       password: "2b079e541af29b37f713",
       role: "master",
       status: "active",
+      whatsapp: "5511999999999",
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
     });
@@ -139,19 +134,6 @@ async function seedDatabase() {
     await Layout.create({
       id: "lay_usr_master",
       resellerId: "usr_master",
-      backgroundUrl: defaultBackgrounds[0],
-      backgrounds: defaultBackgrounds,
-      overlayOpacity: 0.35,
-      apps: defaultApps,
-      updatedAt: new Date().toISOString()
-    });
-  }
-
-  const rev1Layout = await Layout.findOne({ resellerId: "usr_rev_1" });
-  if (!rev1Layout) {
-    await Layout.create({
-      id: "lay_usr_rev_1",
-      resellerId: "usr_rev_1",
       backgroundUrl: defaultBackgrounds[0],
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
@@ -177,7 +159,7 @@ async function seedDatabase() {
 }
 
 /**
- * Resolução Multi-Tenant isolada por Token e MAC (Assíncrona)
+ * Resolução Multi-Tenant isolada por Token e MAC
  */
 async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
@@ -284,18 +266,25 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER
+// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp e QR Code)
 // -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, isExpired } = await resolveLayoutAndClient(mac, token);
+  const { layout, reseller, isExpired } = await resolveLayoutAndClient(mac, token);
+
+  const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
+  const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
+  const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
 
   if (isExpired) {
     return res.json({
       status: "expired",
       isExpired: true,
       message: "Acesso bloqueado ou expirado. Entre em contato com seu revendedor.",
+      whatsapp: cleanWhatsapp,
+      whatsappUrl,
+      qrCodeImageUrl,
       total: 0,
       apps: []
     });
@@ -324,6 +313,9 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
 
   return res.json({
     status: "success",
+    whatsapp: cleanWhatsapp,
+    whatsappUrl,
+    qrCodeImageUrl,
     total: formattedApps.length,
     apps: formattedApps
   });
@@ -335,7 +327,11 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 const handleImgJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
+  const { layout, reseller, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
+
+  const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
+  const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
+  const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
 
   if (isExpired) {
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
@@ -343,6 +339,9 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     return res.json({
       status: "expired",
       isExpired: true,
+      whatsapp: cleanWhatsapp,
+      whatsappUrl,
+      qrCodeImageUrl,
       backgroundUrl: blockedUrl,
       bg_url: blockedUrl,
       img_url: blockedUrl,
@@ -350,10 +349,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
       image: blockedUrl,
       overlayOpacity: 0.0,
       opacity: 0.0,
-      images: [blockedUrl],
-      banners: [
-        { id: "banner_expired", imageUrl: blockedUrl, image_url: blockedUrl, url: blockedUrl }
-      ]
+      images: [blockedUrl]
     });
   }
 
@@ -365,6 +361,9 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
 
   return res.json({
     status: "success",
+    whatsapp: cleanWhatsapp,
+    whatsappUrl,
+    qrCodeImageUrl,
     backgroundUrl: primaryUrl,
     bg_url: primaryUrl,
     img_url: primaryUrl,
@@ -372,13 +371,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     image: primaryUrl,
     overlayOpacity: layout.overlayOpacity ?? 0.35,
     opacity: layout.overlayOpacity ?? 0.35,
-    images: imageList,
-    banners: imageList.map((url: string, index: number) => ({
-      id: `banner_${index}_${Date.now()}`,
-      imageUrl: url,
-      image_url: url,
-      url: url
-    }))
+    images: imageList
   });
 };
 
@@ -401,23 +394,13 @@ const handleVersionJson = async (req: express.Request, res: express.Response) =>
   return res.json({
     versionCode: ota.versionCode,
     version_code: ota.versionCode,
-    code: ota.versionCode,
     versionName: ota.versionName,
     version_name: ota.versionName,
-    version: ota.versionName,
     downloadUrl: ota.downloadUrl,
     download_url: ota.downloadUrl,
-    apk_url: ota.downloadUrl,
-    url: ota.downloadUrl,
     forceUpdate: ota.forceUpdate,
-    force_update: ota.forceUpdate,
     releaseNotes: ota.releaseNotes,
-    release_notes: ota.releaseNotes,
-    notes: ota.releaseNotes,
-    minSupportedVersion: ota.minSupportedVersion,
-    min_supported_version: ota.minSupportedVersion,
-    fileSizeBytes: ota.fileSizeBytes || 18450000,
-    updatedAt: ota.updatedAt
+    minSupportedVersion: ota.minSupportedVersion
   });
 };
 
@@ -425,7 +408,7 @@ app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
 // -------------------------------------------------------------
-// ENDPOINTS ADMIN (GESTÃO DE REVENDEDORES)
+// ENDPOINTS ADMIN E GESTÃO DE REVENDEDORES
 // -------------------------------------------------------------
 app.get("/api/admin/resellers", async (req, res) => {
   disableCache(res);
@@ -445,13 +428,14 @@ app.get("/api/admin/resellers", async (req, res) => {
 });
 
 app.post("/api/admin/resellers", async (req, res) => {
-  const { id, name, email, password, resellerToken, clientLimit, status } = req.body;
+  const { id, name, email, password, resellerToken, clientLimit, status, whatsapp } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({ message: "Nome e Email são obrigatórios." });
   }
 
   const cleanEmail = email.trim().toLowerCase();
+  const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, "") : "";
 
   if (id) {
     const user = await User.findOne({ id });
@@ -463,6 +447,7 @@ app.post("/api/admin/resellers", async (req, res) => {
     if (resellerToken) user.resellerToken = resellerToken.trim().toUpperCase();
     if (clientLimit !== undefined) user.clientLimit = Number(clientLimit);
     if (status) user.status = status;
+    user.whatsapp = cleanWhatsapp;
 
     await user.save();
     return res.json(user);
@@ -484,6 +469,7 @@ app.post("/api/admin/resellers", async (req, res) => {
       resellerToken: token,
       clientLimit: Number(clientLimit || 50),
       status: status || "active",
+      whatsapp: cleanWhatsapp,
       createdAt: new Date().toISOString()
     });
 
@@ -506,6 +492,20 @@ app.delete("/api/admin/resellers/:id", async (req, res) => {
   await User.deleteOne({ id });
   await Layout.deleteMany({ $or: [{ resellerId: id }, { id: `lay_${id}` }] });
   return res.json({ status: "success" });
+});
+
+// Endpoint exclusivo para o Revendedor atualizar o seu próprio WhatsApp
+app.post("/api/reseller/whatsapp", async (req, res) => {
+  const { resellerId, whatsapp } = req.body;
+  if (!resellerId) return res.status(400).json({ message: "ID do revendedor obrigatório." });
+
+  const user = await User.findOne({ id: resellerId });
+  if (!user) return res.status(404).json({ message: "Revendedor não encontrado." });
+
+  user.whatsapp = (whatsapp || "").replace(/\D/g, "");
+  await user.save();
+
+  return res.json({ status: "success", whatsapp: user.whatsapp });
 });
 
 // -------------------------------------------------------------
@@ -671,7 +671,15 @@ app.post("/api/auth/login", async (req, res) => {
 
   return res.json({
     token: `session_${user.id}_${Date.now()}`,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role, resellerToken: user.resellerToken || "", clientLimit: user.clientLimit || 0 }
+    user: { 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      role: user.role, 
+      resellerToken: user.resellerToken || "", 
+      clientLimit: user.clientLimit || 0,
+      whatsapp: user.whatsapp || ""
+    }
   });
 });
 
@@ -724,7 +732,6 @@ async function startServer() {
   }
 
   try {
-    // Aguarda a conexão completa com o MongoDB antes de iniciar o Express
     await mongoose.connect(MONGO_URI);
     console.log("📦 Conectado ao MongoDB Atlas com sucesso!");
     await seedDatabase();
