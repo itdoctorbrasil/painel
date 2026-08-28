@@ -10,6 +10,7 @@ interface WhatsappConfigProps {
 export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, activeResellerView }) => {
   const targetUser = activeResellerView || currentUser;
   const [whatsapp, setWhatsapp] = useState(targetUser.whatsapp || '');
+  const [showWhatsapp, setShowWhatsapp] = useState<boolean>((targetUser as any).showWhatsapp ?? true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -24,7 +25,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
       const res = await fetch('/api/reseller/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resellerId: targetUser.id, whatsapp: formattedWhatsapp })
+        body: JSON.stringify({ resellerId: targetUser.id, whatsapp: formattedWhatsapp, showWhatsapp })
       });
       if (res.ok) {
         setSavedSuccess(true);
@@ -46,15 +47,35 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
             QR Code do WhatsApp de Suporte
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Configure o número de atendimento. O sistema gerará automaticamente o QR Code exibido na tela inicial do Launcher para os seus clientes.
+            Ligue ou desligue a exibição do QR Code de atendimento na tela inicial da TV dos seus clientes.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Formulário de Número */}
+        {/* Formulário de Configuração e Número */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
-          <h3 className="font-bold text-white text-base">Número de Atendimento</h3>
+          <h3 className="font-bold text-white text-base">Configurações de Atendimento</h3>
+          
+          {/* Botão ON / OFF */}
+          <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div>
+              <span className="text-white text-sm font-bold block">Status no Launcher</span>
+              <span className="text-slate-400 text-xs">Exibir QR Code na tela inicial</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowWhatsapp(!showWhatsapp)}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                showWhatsapp 
+                  ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' 
+                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              }`}
+            >
+              {showWhatsapp ? 'ON (ATIVADO)' : 'OFF (DESATIVADO)'}
+            </button>
+          </div>
+
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label className="block text-slate-400 text-xs font-semibold mb-1">WhatsApp (DDI + DDD + Número):</label>
@@ -71,18 +92,18 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
             <button
               type="submit"
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
             >
               {savedSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
-              <span>{savedSuccess ? 'Salvo com Sucesso!' : 'Salvar Número'}</span>
+              <span>{savedSuccess ? 'Configuração Salva!' : 'Salvar Alterações'}</span>
             </button>
           </form>
         </div>
 
-        {/* Pré-visualização do QR Code */}
+        {/* Pré-visualização do QR Code com Feedback Visual ON/OFF */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center text-center space-y-3">
           <h3 className="font-bold text-white text-base">Pré-visualização na TV</h3>
-          <div className="bg-white p-4 rounded-2xl shadow-inner">
+          <div className={`p-4 rounded-2xl transition duration-300 ${showWhatsapp ? 'bg-white opacity-100 shadow-inner' : 'bg-slate-950 opacity-30 grayscale'}`}>
             {formattedWhatsapp.length > 8 ? (
               <img src={qrCodeImageUrl} alt="QR Code WhatsApp" className="w-[160px] h-[160px] object-contain" />
             ) : (
@@ -91,7 +112,9 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
               </div>
             )}
           </div>
-          <span className="text-xs text-slate-400 font-mono">Apontado para o atendimento</span>
+          <span className="text-xs text-slate-400 font-mono">
+            {showWhatsapp ? 'Exibição Ativada no Launcher' : 'Exibição Oculta para os Clientes'}
+          </span>
         </div>
       </div>
     </div>
