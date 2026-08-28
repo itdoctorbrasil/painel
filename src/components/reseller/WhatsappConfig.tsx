@@ -57,7 +57,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
           <h3 className="font-bold text-white text-base">Configurações de Atendimento</h3>
           
-          {/* Botão ON / OFF */}
+          {/* Botão Switch Estilo Slider ON / OFF */}
           <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
             <div>
               <span className="text-white text-sm font-bold block">Status no Launcher</span>
@@ -66,13 +66,18 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
             <button
               type="button"
               onClick={() => setShowWhatsapp(!showWhatsapp)}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
-                showWhatsapp 
-                  ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' 
-                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors duration-300 focus:outline-none cursor-pointer px-2 ${
+                showWhatsapp ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-rose-500 shadow-lg shadow-rose-500/20'
               }`}
             >
-              {showWhatsapp ? 'ON (ATIVADO)' : 'OFF (DESATIVADO)'}
+              <span className={`text-[11px] font-black text-white absolute ${showWhatsapp ? 'left-3' : 'right-3'}`}>
+                {showWhatsapp ? 'ON' : 'OFF'}
+              </span>
+              <div
+                className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                  showWhatsapp ? 'translate-x-9' : 'translate-x-0'
+                }`}
+              />
             </button>
           </div>
 
