@@ -27,7 +27,7 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose com suporte a whatsapp
+// Definição dos Schemas do Mongoose com suporte a whatsapp e showWhatsapp
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema({
   clientLimit: Number,
   status: String,
   whatsapp: String,
+  showWhatsapp: { type: Boolean, default: true },
   createdAt: String,
   lastLogin: String
 });
@@ -124,6 +125,7 @@ async function seedDatabase() {
       role: "master",
       status: "active",
       whatsapp: "5511999999999",
+      showWhatsapp: true,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
     });
@@ -266,7 +268,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp e QR Code)
+// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp e showWhatsapp)
 // -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
@@ -276,12 +278,14 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
+  const showWhatsapp = reseller?.showWhatsapp ?? true;
 
   if (isExpired) {
     return res.json({
       status: "expired",
       isExpired: true,
       message: "Acesso bloqueado ou expirado. Entre em contato com seu revendedor.",
+      showWhatsapp,
       whatsapp: cleanWhatsapp,
       whatsappUrl,
       qrCodeImageUrl,
@@ -313,6 +317,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
 
   return res.json({
     status: "success",
+    showWhatsapp,
     whatsapp: cleanWhatsapp,
     whatsappUrl,
     qrCodeImageUrl,
@@ -332,6 +337,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
+  const showWhatsapp = reseller?.showWhatsapp ?? true;
 
   if (isExpired) {
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
@@ -339,6 +345,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     return res.json({
       status: "expired",
       isExpired: true,
+      showWhatsapp,
       whatsapp: cleanWhatsapp,
       whatsappUrl,
       qrCodeImageUrl,
@@ -361,6 +368,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
 
   return res.json({
     status: "success",
+    showWhatsapp,
     whatsapp: cleanWhatsapp,
     whatsappUrl,
     qrCodeImageUrl,
@@ -428,7 +436,7 @@ app.get("/api/admin/resellers", async (req, res) => {
 });
 
 app.post("/api/admin/resellers", async (req, res) => {
-  const { id, name, email, password, resellerToken, clientLimit, status, whatsapp } = req.body;
+  const { id, name, email, password, resellerToken, clientLimit, status, whatsapp, showWhatsapp } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({ message: "Nome e Email são obrigatórios." });
@@ -448,6 +456,7 @@ app.post("/api/admin/resellers", async (req, res) => {
     if (clientLimit !== undefined) user.clientLimit = Number(clientLimit);
     if (status) user.status = status;
     user.whatsapp = cleanWhatsapp;
+    if (showWhatsapp !== undefined) user.showWhatsapp = Boolean(showWhatsapp);
 
     await user.save();
     return res.json(user);
@@ -470,6 +479,7 @@ app.post("/api/admin/resellers", async (req, res) => {
       clientLimit: Number(clientLimit || 50),
       status: status || "active",
       whatsapp: cleanWhatsapp,
+      showWhatsapp: showWhatsapp !== undefined ? Boolean(showWhatsapp) : true,
       createdAt: new Date().toISOString()
     });
 
@@ -494,18 +504,19 @@ app.delete("/api/admin/resellers/:id", async (req, res) => {
   return res.json({ status: "success" });
 });
 
-// Endpoint exclusivo para o Revendedor atualizar o seu próprio WhatsApp
+// Endpoint para o Revendedor atualizar o WhatsApp e a chave ON/OFF
 app.post("/api/reseller/whatsapp", async (req, res) => {
-  const { resellerId, whatsapp } = req.body;
+  const { resellerId, whatsapp, showWhatsapp } = req.body;
   if (!resellerId) return res.status(400).json({ message: "ID do revendedor obrigatório." });
 
   const user = await User.findOne({ id: resellerId });
   if (!user) return res.status(404).json({ message: "Revendedor não encontrado." });
 
-  user.whatsapp = (whatsapp || "").replace(/\D/g, "");
+  if (whatsapp !== undefined) user.whatsapp = whatsapp.replace(/\D/g, "");
+  if (showWhatsapp !== undefined) user.showWhatsapp = Boolean(showWhatsapp);
   await user.save();
 
-  return res.json({ status: "success", whatsapp: user.whatsapp });
+  return res.json({ status: "success", whatsapp: user.whatsapp, showWhatsapp: user.showWhatsapp });
 });
 
 // -------------------------------------------------------------
@@ -678,7 +689,8 @@ app.post("/api/auth/login", async (req, res) => {
       role: user.role, 
       resellerToken: user.resellerToken || "", 
       clientLimit: user.clientLimit || 0,
-      whatsapp: user.whatsapp || ""
+      whatsapp: user.whatsapp || "",
+      showWhatsapp: user.showWhatsapp ?? true
     }
   });
 });
