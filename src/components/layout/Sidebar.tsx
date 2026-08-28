@@ -9,7 +9,8 @@ import {
   LogOut, 
   Shield, 
   Image as ImageIcon,
-  AppWindow
+  AppWindow,
+  QrCode
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,12 +41,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
   ];
 
-  // Menu do Revendedor com acesso completo aos Clientes e Instalações Pendentes
+  // Menu do Revendedor (Incluindo a nova opção de QR Code WhatsApp exatamente onde você marcou)
   const resellerNav = [
     { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
+    { id: 'whatsapp_qr', label: 'QR Code WhatsApp', icon: QrCode },
     { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
   ];
 
