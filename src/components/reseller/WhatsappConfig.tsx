@@ -118,7 +118,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
             )}
           </div>
           <span className="text-xs text-slate-400 font-mono">
-            {showWhatsapp ? QR CODE ATIVO' : 'QR CODE DESATIVADO'}
+            {showWhatsapp ? 'QR CODE ATIVO' : 'QR CODE DESATIVADO'}
           </span>
         </div>
       </div>
