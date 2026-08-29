@@ -47,7 +47,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
             QR Code do WhatsApp para suporte e renovação
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Neste menu você pode configurar o número de telefone para os seus clientes scanearem o QR CODE e ter suporte via Whatsapp.
+            Neste menu você pode configurar o número de telefone para os seus clientes scanearem o QR CODE para suporte via Whatsapp.
           </p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
           <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
             <div>
               <span className="text-white text-sm font-bold block">Status no Launcher</span>
-              <span className="text-slate-400 text-xs">Exibir QR Code na tela inicial</span>
+              <span className="text-slate-400 text-xs">Exibir QR Code na Luna Launcher</span>
             </div>
             <button
               type="button"
@@ -91,7 +91,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
                 placeholder="Ex: 5511999887766"
                 className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-mono"
               />
-              <p className="text-[11px] text-slate-500 mt-1">Link gerado: <code className="text-emerald-400">wa.me/+{formattedWhatsapp || '55xxxxxxxxx'}</code></p>
+              <p className="text-[11px] text-slate-500 mt-1">O seu link gerado é: <code className="text-emerald-400">wa.me/+{formattedWhatsapp || '55xxxxxxxxx'}</code></p>
             </div>
 
             <button
@@ -107,7 +107,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
 
         {/* Pré-visualização do QR Code com Feedback Visual ON/OFF */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center text-center space-y-3">
-          <h3 className="font-bold text-white text-base">Pré-visualização na TV</h3>
+          <h3 className="font-bold text-white text-base">Pré-visualização na Luna Launcher</h3>
           <div className={`p-4 rounded-2xl transition duration-300 ${showWhatsapp ? 'bg-white opacity-100 shadow-inner' : 'bg-slate-950 opacity-30 grayscale'}`}>
             {formattedWhatsapp.length > 8 ? (
               <img src={qrCodeImageUrl} alt="QR Code WhatsApp" className="w-[160px] h-[160px] object-contain" />
