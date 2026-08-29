@@ -91,7 +91,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
                 placeholder="Ex: 5511999887766"
                 className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-mono"
               />
-              <p className="text-[11px] text-slate-500 mt-1">O seu link gerado é: <code className="text-emerald-400">wa.me/+{formattedWhatsapp || '55xxxxxxxxx'}</code></p>
+              <p className="text-[11px] text-slate-500 mt-1">O seu link customizado: <code className="text-emerald-400">https://wa.me/+{formattedWhatsapp || '55xxxxxxxxx'}</code></p>
             </div>
 
             <button
