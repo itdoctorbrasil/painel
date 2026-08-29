@@ -41,7 +41,10 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const [editingClient, setEditingClient] = useState<ClientDevice | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  
+  // Alterado o padrão inicial para 'list'
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -169,11 +172,9 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
-  // Filtro inteligente que suporta tanto o Master quanto o Revendedor (incluindo captura via APK Coringa pelo Token)
   const filtered = clients.filter(c => {
     if (!isMasterView) {
       const matchesResellerId = c.resellerId === targetResellerId;
-      // Se o deviceToken ou notes contiver o token do revendedor, ele pertence a esta revenda
       const matchesToken = targetResellerToken && c.deviceToken && c.deviceToken.includes(targetResellerToken);
       if (!matchesResellerId && !matchesToken) return false;
     }
