@@ -437,7 +437,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <th className="p-4">Token de Ativação</th>
                   <th className="p-4">Validade</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Ações</th>
+                  <th className="p-4 text-right pr-6">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -470,7 +470,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                             {c.status === 'suspended' ? 'Suspenso' : isExpired ? 'Expirado' : 'Ativo'}
                           </span>
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-4 text-right pr-6">
                           <div className="inline-flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditModal(c)}
