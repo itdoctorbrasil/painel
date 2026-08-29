@@ -44,10 +44,10 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
         <div>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <MessageSquare className="w-7 h-7 text-emerald-400" />
-            QR Code do WhatsApp de Suporte
+            QR Code do WhatsApp para suporte e renovação
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Ligue ou desligue a exibição do QR Code de atendimento na tela inicial da TV dos seus clientes.
+            Neste menu você pode configurar o número de telefone para os seus clientes scanearem o QR CODE e ter suporte via Whatsapp.
           </p>
         </div>
       </div>
