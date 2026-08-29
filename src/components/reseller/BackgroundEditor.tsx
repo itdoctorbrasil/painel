@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, AppLayout } from '../../types';
 import { TvPreviewMockup } from '../common/TvPreviewMockup';
 import { BACKGROUND_PRESETS } from '../../services/mockData';
-import { Image, Save, Check, Upload, Plus, Trash2, Layers } from 'lucide-react';
+import { Image, Save, Check, Plus, Trash2, Layers, Link as LinkIcon } from 'lucide-react';
 
 interface BackgroundEditorProps {
   currentUser: User;
@@ -48,24 +48,6 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
       setOverlayOpacity(0.35);
     }
   }, [layout, targetResellerId]);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("O arquivo excede o limite de 5MB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Image = reader.result as string;
-        const updatedList = [...backgrounds, base64Image];
-        setBackgrounds(updatedList);
-        setBackgroundUrl(updatedList[0]);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleAddUrl = () => {
     if (newUrlInput.trim()) {
@@ -158,17 +140,16 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold py-3 px-4 rounded-xl cursor-pointer transition text-xs">
-                <Upload className="w-4 h-4" />
-                <span>Carregar Imagem do PC</span>
-                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            {/* Input de URL Direta expandido ocupando a largura total */}
+            <div>
+              <label className="block text-slate-300 font-semibold text-xs mb-2 flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
+                Adicionar Nova Imagem por URL Direta
               </label>
-
               <div className="flex gap-2">
                 <input
                   type="url"
-                  placeholder="Cole a URL direta (https://...)"
+                  placeholder="Cole a URL direta da imagem (https://...)"
                   value={newUrlInput}
                   onChange={(e) => setNewUrlInput(e.target.value)}
                   className="flex-1 bg-slate-950 border border-slate-800 text-white text-xs font-mono rounded-xl p-3 focus:outline-none focus:border-indigo-500"
@@ -176,10 +157,10 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
                 <button
                   type="button"
                   onClick={handleAddUrl}
-                  className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-3 rounded-xl text-xs flex items-center gap-1 transition cursor-pointer"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-3 rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-indigo-600/20"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add</span>
+                  <span>Adicionar</span>
                 </button>
               </div>
             </div>
