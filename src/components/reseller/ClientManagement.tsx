@@ -471,7 +471,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="inline-flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditModal(c)}
                               className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg inline-flex items-center justify-center transition cursor-pointer"
