@@ -55,7 +55,7 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Formulário de Configuração e Número */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
-          <h3 className="font-bold text-white text-base">Configurações de Atendimento</h3>
+          <h3 className="font-bold text-white text-base">LIGAR OU DESLIGAR</h3>
           
           {/* Botão Switch Estilo Slider ON / OFF */}
           <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
