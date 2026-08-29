@@ -403,7 +403,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Bottom Actions (Sem o botão API) */}
+                {/* Bottom Actions */}
                 <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
                   <button
                     onClick={() => openEditModal(c)}
@@ -470,21 +470,23 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                             {c.status === 'suspended' ? 'Suspenso' : isExpired ? 'Expirado' : 'Ativo'}
                           </span>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button
-                            onClick={() => openEditModal(c)}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-1.5 rounded-lg inline-flex items-center transition cursor-pointer"
-                            title="Editar"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(c.id, c.clientName || 'Dispositivo')}
-                            className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg inline-flex items-center transition border border-rose-500/20 cursor-pointer"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => openEditModal(c)}
+                              className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg inline-flex items-center justify-center transition cursor-pointer"
+                              title="Editar"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(c.id, c.clientName || 'Dispositivo')}
+                              className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg inline-flex items-center justify-center transition border border-rose-500/20 cursor-pointer"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
