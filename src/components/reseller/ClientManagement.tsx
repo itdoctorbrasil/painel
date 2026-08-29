@@ -8,7 +8,6 @@ import {
   Copy, 
   Check, 
   Calendar,
-  ExternalLink,
   Tv,
   LayoutGrid,
   List
@@ -30,8 +29,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   clients,
   onSaveClient,
   onRenewClient,
-  onDeleteClient,
-  onOpenApiTester
+  onDeleteClient
 }) => {
   const targetResellerId = activeResellerView ? activeResellerView.id : currentUser.id;
   const targetResellerToken = activeResellerView ? activeResellerView.resellerToken : currentUser.resellerToken;
@@ -41,10 +39,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const [editingClient, setEditingClient] = useState<ClientDevice | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
-  
-  // Alterado o padrão inicial para 'list'
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -408,29 +403,22 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Bottom Actions */}
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => onOpenApiTester(c.deviceToken)}
-                    className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/30 flex items-center gap-1 flex-1 justify-center cursor-pointer"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Testar API
-                  </button>
-
+                {/* Bottom Actions (Sem o botão API) */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
                   <button
                     onClick={() => openEditModal(c)}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg text-xs font-medium transition cursor-pointer"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5"
                     title="Editar Dispositivo"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 className="w-4 h-4" /> Editar
                   </button>
 
                   <button
                     onClick={() => handleDelete(c.id, c.clientName || 'Dispositivo')}
-                    className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg text-xs font-medium transition border border-rose-500/20 cursor-pointer"
+                    className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-2 rounded-lg text-xs font-medium transition border border-rose-500/20 cursor-pointer flex items-center gap-1.5"
                     title="Excluir Dispositivo"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" /> Excluir
                   </button>
                 </div>
               </div>
@@ -483,13 +471,6 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                           </span>
                         </td>
                         <td className="p-4 text-right space-x-2">
-                          <button
-                            onClick={() => onOpenApiTester(c.deviceToken)}
-                            className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition border border-indigo-500/30 inline-flex items-center gap-1 cursor-pointer"
-                            title="Testar API"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" /> API
-                          </button>
                           <button
                             onClick={() => openEditModal(c)}
                             className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-1.5 rounded-lg inline-flex items-center transition cursor-pointer"
