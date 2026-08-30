@@ -33,7 +33,7 @@ import { BackgroundEditor } from './components/reseller/BackgroundEditor';
 import { AppGridEditor } from './components/reseller/AppGridEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
-import { WhatsappConfig } from './components/reseller/WhatsappConfig'; // <--- IMPORTANTE: Importa a tela do QR Code WhatsApp
+import { WhatsappConfig } from './components/reseller/WhatsappConfig';
 
 import { LogIn, Lock, Mail } from 'lucide-react';
 
@@ -53,29 +53,23 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // 2. Sincronização de Abas com a URL (Resolve a seta "Voltar" do navegador)
+  // 2. Sincronização de Abas com a URL
   const [activeTab, setActiveTab] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || 'dashboard';
   });
 
-  // Estado para controlar o filtro ao navegar para a aba de Clientes via cards
   const [clientFilter, setClientFilter] = useState<'all' | 'active' | 'expired'>('all');
-
-  // Master impersonation / view mode
   const [activeResellerView, setActiveResellerView] = useState<User | null>(null);
 
-  // Data state
   const [resellers, setResellers] = useState<(User & { totalClients: number; activeClients: number })[]>([]);
   const [globalStats, setGlobalStats] = useState<any>(null);
   const [otaVersion, setOtaVersion] = useState<OtaVersion | null>(null);
   const [layout, setLayout] = useState<AppLayout | null>(null);
   const [clients, setClients] = useState<ClientDevice[]>([]);
 
-  // Tester prefilled token
   const [initialTestToken, setInitialTestToken] = useState<string | undefined>(undefined);
 
-  // Salva ou remove o usuário do localStorage quando logar/deslogar
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('luna_current_user', JSON.stringify(currentUser));
@@ -85,7 +79,6 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Função centralizada para mudar de aba atualizando a URL (Histórico do navegador)
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     const url = new URL(window.location.href);
@@ -93,7 +86,6 @@ export default function App() {
     window.history.pushState({ tab }, '', url.toString());
   };
 
-  // Escuta os botões "Voltar / Avançar" do navegador
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
@@ -127,7 +119,6 @@ export default function App() {
     setPassword('');
   };
 
-  // Centralized data loader
   const loadAllData = async (user: User) => {
     try {
       if (user.role === 'master') {
@@ -164,7 +155,6 @@ export default function App() {
     }
   };
 
-  // Reload layout when activeResellerView changes
   useEffect(() => {
     if (currentUser) {
       const targetId = activeResellerView ? activeResellerView.id : currentUser.id;
@@ -180,7 +170,6 @@ export default function App() {
     }
   }, [activeResellerView, currentUser]);
 
-  // Master Handlers
   const handleSaveReseller = async (data: Partial<User>) => {
     await saveResellerApi(data);
     if (currentUser) loadAllData(currentUser);
@@ -198,13 +187,11 @@ export default function App() {
     if (currentUser) loadAllData(currentUser);
   };
 
-  // Layout Handlers
   const handleSaveLayout = async (layoutData: Partial<AppLayout>) => {
     const updated = await saveLayoutApi(layoutData);
     setLayout(updated);
   };
 
-  // Client Handlers
   const handleSaveClient = async (clientData: any) => {
     await saveClientApi(clientData);
     if (currentUser) loadAllData(currentUser);
@@ -220,24 +207,29 @@ export default function App() {
     if (currentUser) loadAllData(currentUser);
   };
 
-  // Quick Open API Tester with Token
+  // Atualiza o estado global do usuário ao salvar o WhatsApp/QR Code
+  const handleUpdateWhatsappConfig = (newWhatsapp: string, newShowWhatsapp: boolean) => {
+    if (activeResellerView) {
+      const updated = { ...activeResellerView, whatsapp: newWhatsapp, showWhatsapp: newShowWhatsapp };
+      setActiveResellerView(updated);
+    } else if (currentUser) {
+      const updated = { ...currentUser, whatsapp: newWhatsapp, showWhatsapp: newShowWhatsapp };
+      setCurrentUser(updated);
+    }
+  };
+
   const handleOpenApiTester = (token: string) => {
     setInitialTestToken(token);
     handleTabChange('api_tester');
   };
 
-  // Render Login View if unauthenticated
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-between text-slate-100 p-4 relative overflow-hidden font-sans">
-        
-        {/* Background ambient lighting */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-md w-full mx-auto my-auto py-12 relative z-10">
-          
-          {/* Brand Header */}
           <div className="text-center mb-8">
             <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-3xl shadow-2xl shadow-indigo-500/30 mb-4">
               L
@@ -250,7 +242,6 @@ export default function App() {
             </p>
           </div>
 
-          {/* Login Form */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <h2 className="text-lg font-bold text-white mb-4">Entrar na sua Conta</h2>
 
@@ -316,11 +307,8 @@ export default function App() {
     );
   }
 
-  // Render Dashboard
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans">
-      
-      {/* Sidebar Navigation - Passamos handleTabChange para atualizar o histórico */}
       <Sidebar
         currentUser={currentUser}
         activeTab={activeTab}
@@ -329,17 +317,13 @@ export default function App() {
         activeResellerView={activeResellerView}
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* Impersonation Banner for Master */}
         <ImpersonationBanner
           currentUser={currentUser}
           activeResellerView={activeResellerView}
           onExitImpersonation={() => setActiveResellerView(null)}
         />
 
-        {/* Top Header */}
         <Header
           currentUser={currentUser}
           activeTab={activeTab}
@@ -350,10 +334,7 @@ export default function App() {
           onOpenOtaModal={() => handleTabChange('ota')}
         />
 
-        {/* Dynamic Tab Body */}
         <main className="p-6 flex-1 max-w-7xl w-full mx-auto space-y-6">
-          
-          {/* 1. Global Dashboard / Reseller Dashboard */}
           {activeTab === 'dashboard' && (
             currentUser.role === 'master' && !activeResellerView ? (
               <GlobalStats
@@ -362,7 +343,6 @@ export default function App() {
                 onNavigateToTab={(tab) => handleTabChange(tab)}
               />
             ) : (
-              /* DASHBOARD / VISÃO GERAL DA REVENDA (Métricas e Atalhos) */
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -387,9 +367,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Cards Interativos da Revenda Alinhados */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                  {/* Card 1: Total */}
                   <div 
                     onClick={() => {
                       setClientFilter('all');
@@ -408,7 +386,6 @@ export default function App() {
                     <p className="text-xs text-slate-400 mt-4">TV Boxes e Smart TVs cadastradas</p>
                   </div>
 
-                  {/* Card 2: Ativos */}
                   <div 
                     onClick={() => {
                       setClientFilter('active');
@@ -427,7 +404,6 @@ export default function App() {
                     <p className="text-xs text-slate-400 mt-4">Dispositivos com acesso liberado</p>
                   </div>
 
-                  {/* Card 3: Expirados */}
                   <div 
                     onClick={() => {
                       setClientFilter('expired');
@@ -450,7 +426,6 @@ export default function App() {
             )
           )}
 
-          {/* 2. Resellers Management (Master only) */}
           {activeTab === 'resellers' && (
             <ResellerManagement
               resellers={resellers}
@@ -463,7 +438,6 @@ export default function App() {
             />
           )}
 
-          {/* 3. OTA Updates Management (Estritamente Restrito ao Master Admin) */}
           {activeTab === 'ota' && (
             currentUser.role === 'master' && !activeResellerView && otaVersion ? (
               <OtaManagement
@@ -489,7 +463,6 @@ export default function App() {
             )
           )}
 
-          {/* 4. All Clients View (Master) OR Clients View (Reseller) */}
           {(activeTab === 'all_clients' || activeTab === 'clients') && (
             <ClientManagement
               currentUser={currentUser}
@@ -503,7 +476,6 @@ export default function App() {
             />
           )}
 
-          {/* 5. Gerenciamento Isolado de Backgrounds */}
           {activeTab === 'background_editor' && (
             <BackgroundEditor
               currentUser={currentUser}
@@ -513,7 +485,6 @@ export default function App() {
             />
           )}
 
-          {/* 6. Gerenciamento Isolado da Grade de Apps */}
           {activeTab === 'apps_editor' && (
             <AppGridEditor
               currentUser={currentUser}
@@ -523,15 +494,14 @@ export default function App() {
             />
           )}
 
-          {/* 7. Configuração do QR Code WhatsApp */}
           {activeTab === 'whatsapp_qr' && (
             <WhatsappConfig
               currentUser={currentUser}
               activeResellerView={activeResellerView}
+              onUpdateWhatsapp={handleUpdateWhatsappConfig}
             />
           )}
 
-          {/* 8. API Tester & Documentation */}
           {activeTab === 'api_tester' && (
             <ApiTester
               currentUser={currentUser}
