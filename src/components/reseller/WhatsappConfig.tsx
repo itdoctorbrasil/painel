@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import { MessageSquare, Save, Check } from 'lucide-react';
 
@@ -9,18 +9,26 @@ interface WhatsappConfigProps {
 
 export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, activeResellerView }) => {
   const targetUser = activeResellerView || currentUser;
-  const [whatsapp, setWhatsapp] = useState(targetUser.whatsapp || '');
   
-  // Trata variações de nomes do campo vindas do banco de dados (showWhatsapp, show_whatsapp, showQrCode)
-  const initialShowWhatsapp = 
-    (targetUser as any).showWhatsapp ?? 
-    (targetUser as any).show_whatsapp ?? 
-    (targetUser as any).showQrCode ?? 
-    false;
-
-  const [showWhatsapp, setShowWhatsapp] = useState<boolean>(initialShowWhatsapp);
+  const [whatsapp, setWhatsapp] = useState('');
+  const [showWhatsapp, setShowWhatsapp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Sincroniza e força a leitura correta dos dados reais do revendedor atual ao carregar ou alternar
+  useEffect(() => {
+    if (targetUser) {
+      const currentWhatsapp = targetUser.whatsapp || (targetUser as any).phone || '';
+      const currentShow = 
+        (targetUser as any).showWhatsapp ?? 
+        (targetUser as any).show_whatsapp ?? 
+        (targetUser as any).showQrCode ?? 
+        false;
+
+      setWhatsapp(currentWhatsapp);
+      setShowWhatsapp(Boolean(currentShow));
+    }
+  }, [targetUser]);
 
   const formattedWhatsapp = whatsapp.replace(/\D/g, '');
   const waLink = `https://wa.me/+${formattedWhatsapp}`;
@@ -33,9 +41,17 @@ export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, act
       const res = await fetch('/api/reseller/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resellerId: targetUser.id, whatsapp: formattedWhatsapp, showWhatsapp })
+        body: JSON.stringify({ 
+          resellerId: targetUser.id, 
+          whatsapp: formattedWhatsapp, 
+          showWhatsapp: showWhatsapp 
+        })
       });
       if (res.ok) {
+        // Atualiza instantaneamente os dados locais para refletir sem precisar de F5 bruto
+        targetUser.whatsapp = formattedWhatsapp;
+        (targetUser as any).showWhatsapp = showWhatsapp;
+
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 2500);
       }
