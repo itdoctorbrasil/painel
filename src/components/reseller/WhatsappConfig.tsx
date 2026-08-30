@@ -10,7 +10,15 @@ interface WhatsappConfigProps {
 export const WhatsappConfig: React.FC<WhatsappConfigProps> = ({ currentUser, activeResellerView }) => {
   const targetUser = activeResellerView || currentUser;
   const [whatsapp, setWhatsapp] = useState(targetUser.whatsapp || '');
-  const [showWhatsapp, setShowWhatsapp] = useState<boolean>((targetUser as any).showWhatsapp ?? true);
+  
+  // Trata variações de nomes do campo vindas do banco de dados (showWhatsapp, show_whatsapp, showQrCode)
+  const initialShowWhatsapp = 
+    (targetUser as any).showWhatsapp ?? 
+    (targetUser as any).show_whatsapp ?? 
+    (targetUser as any).showQrCode ?? 
+    false;
+
+  const [showWhatsapp, setShowWhatsapp] = useState<boolean>(initialShowWhatsapp);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
