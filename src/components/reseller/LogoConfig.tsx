@@ -92,7 +92,7 @@ export const LogoConfig: React.FC<LogoConfigProps> = ({
         <ImageIcon className="w-8 h-8 text-indigo-400" />
         <div>
           <h2 className="text-xl font-bold">Logo Customizada</h2>
-          <p className="text-sm text-slate-400">Faça o upload da logo que aparecerá no canto superior esquerdo do launcher dos seus clientes.</p>
+          <p className="text-sm text-slate-400">Faça o upload da logo que aparecerá no launcher dos seus clientes.</p>
         </div>
       </div>
 
