@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isMaster = currentUser.role === 'master' && !activeResellerView;
 
-  // Menu do Master Admin
+  // Menu do Master Admin (Com suporte à Logo Customizada)
   const masterNav = [
     { id: 'dashboard', label: 'Estatísticas Globais', icon: LayoutDashboard },
     { id: 'resellers', label: 'Revendedores', icon: Users },
@@ -38,16 +38,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'all_clients', label: 'Todos os Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Gerenciar Backgrounds', icon: ImageIcon },
     { id: 'apps_editor', label: 'Gerenciar Grade de Apps', icon: AppWindow },
+    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon }, // <--- Adicionado aqui também para o Master
     { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
   ];
 
-  // Menu do Revendedor (Incluindo a nova opção de QR Code WhatsApp exatamente onde você marcou)
+  // Menu do Revendedor (Incluindo a nova opção de Logo Customizada)
   const resellerNav = [
     { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
     { id: 'whatsapp_qr', label: 'QR Code WhatsApp', icon: QrCode },
+    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon }, // <--- Adicionado aqui para os revendedores
     { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
   ];
 
