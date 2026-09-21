@@ -54,6 +54,10 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Gerenciamento de Backgrounds & Carrossel HD';
       case 'apps_editor':
         return 'Gerencie aqui os aplicativos fixos';
+      case 'logo_config':
+        return 'Logo Customizada'; // <--- Título limpo sem White-Label
+      case 'whatsapp_qr':
+        return 'QR Code WhatsApp';
       case 'api_tester':
         return 'Download Launcher';
       default:
@@ -74,6 +78,10 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Personalize o papel de parede e o carrossel exibido nas TV Boxes';
       case 'apps_editor':
         return 'Configure os atalhos fixos que aparecem na tela inicial do launcher';
+      case 'logo_config':
+        return 'Faça o upload e gerencie a logo exibida no topo esquerdo do launcher';
+      case 'whatsapp_qr':
+        return 'Configure o número de suporte do WhatsApp e o QR Code de atendimento';
       case 'api_tester':
         return 'Obtenha seu link exclusivo de instalação ou baixe o instalador da revenda';
       default:
