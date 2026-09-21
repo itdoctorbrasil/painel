@@ -34,6 +34,7 @@ import { AppGridEditor } from './components/reseller/AppGridEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 import { WhatsappConfig } from './components/reseller/WhatsappConfig';
+import { LogoConfig } from './components/reseller/LogoConfig'; // <--- Nova aba de Logo Customizada importada
 
 import { LogIn, Lock, Mail } from 'lucide-react';
 
@@ -499,6 +500,15 @@ export default function App() {
               currentUser={currentUser}
               activeResellerView={activeResellerView}
               onUpdateWhatsapp={handleUpdateWhatsappConfig}
+            />
+          )}
+
+          {activeTab === 'logo_config' && (
+            <LogoConfig
+              currentUser={currentUser}
+              activeResellerView={activeResellerView}
+              layout={layout}
+              onSaveLayout={handleSaveLayout}
             />
           )}
 
