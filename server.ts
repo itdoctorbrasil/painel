@@ -27,7 +27,7 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose com suporte a whatsapp e showWhatsapp
+// Definição dos Schemas do Mongoose com suporte a whatsapp, showWhatsapp e logoUrl
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -49,6 +49,7 @@ const layoutSchema = new mongoose.Schema({
   backgroundUrl: String,
   backgrounds: [String],
   overlayOpacity: Number,
+  logoUrl: { type: String, default: "" }, // <--- Suporte à logo customizada do revendedor
   apps: Array,
   updatedAt: String
 });
@@ -139,6 +140,7 @@ async function seedDatabase() {
       backgroundUrl: defaultBackgrounds[0],
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
+      logoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -254,6 +256,7 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       backgroundUrl: defaultBackgrounds[0],
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
+      logoUrl: "",
       apps: defaultApps
     };
   }
@@ -268,7 +271,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp e showWhatsapp)
+// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp e logoUrl)
 // -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
@@ -279,6 +282,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
+  const logoUrl = layout?.logoUrl || "";
 
   if (isExpired) {
     return res.json({
@@ -289,6 +293,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
       whatsapp: cleanWhatsapp,
       whatsappUrl,
       qrCodeImageUrl,
+      logoUrl,
       total: 0,
       apps: []
     });
@@ -321,6 +326,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
     whatsapp: cleanWhatsapp,
     whatsappUrl,
     qrCodeImageUrl,
+    logoUrl,
     total: formattedApps.length,
     apps: formattedApps
   });
@@ -338,6 +344,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
+  const logoUrl = layout?.logoUrl || "";
 
   if (isExpired) {
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
@@ -349,6 +356,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
       whatsapp: cleanWhatsapp,
       whatsappUrl,
       qrCodeImageUrl,
+      logoUrl,
       backgroundUrl: blockedUrl,
       bg_url: blockedUrl,
       img_url: blockedUrl,
@@ -372,6 +380,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     whatsapp: cleanWhatsapp,
     whatsappUrl,
     qrCodeImageUrl,
+    logoUrl,
     backgroundUrl: primaryUrl,
     bg_url: primaryUrl,
     img_url: primaryUrl,
@@ -489,6 +498,7 @@ app.post("/api/admin/resellers", async (req, res) => {
       backgroundUrl: defaultBackgrounds[0],
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
+      logoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -621,7 +631,7 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// GESTÃO DE LAYOUTS
+// GESTÃO DE LAYOUTS (Incluindo suporte à logoUrl)
 // -------------------------------------------------------------
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
@@ -634,6 +644,7 @@ app.get("/api/reseller/layout/:resellerId", async (req, res) => {
       backgroundUrl: defaultBackgrounds[0],
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
+      logoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -642,16 +653,19 @@ app.get("/api/reseller/layout/:resellerId", async (req, res) => {
 });
 
 app.post("/api/reseller/layout", async (req, res) => {
-  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, apps } = req.body;
+  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, apps } = req.body;
   const targetId = resellerId || "usr_master";
+
+  const existingLayout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
 
   const updatedData = {
     id: "lay_" + targetId,
     resellerId: targetId,
-    backgroundUrl: backgroundUrl || backgrounds?.[0] || defaultBackgrounds[0],
-    backgrounds: backgrounds || [backgroundUrl || defaultBackgrounds[0]],
-    overlayOpacity: Number(overlayOpacity ?? 0.35),
-    apps: Array.isArray(apps) ? apps : defaultApps,
+    backgroundUrl: backgroundUrl || backgrounds?.[0] || existingLayout?.backgroundUrl || defaultBackgrounds[0],
+    backgrounds: backgrounds || existingLayout?.backgrounds || defaultBackgrounds,
+    overlayOpacity: Number(overlayOpacity ?? existingLayout?.overlayOpacity ?? 0.35),
+    logoUrl: logoUrl !== undefined ? logoUrl : (existingLayout?.logoUrl || ""),
+    apps: Array.isArray(apps) ? apps : (existingLayout?.apps || defaultApps),
     updatedAt: new Date().toISOString()
   };
 
