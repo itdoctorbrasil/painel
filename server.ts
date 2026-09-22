@@ -564,7 +564,7 @@ app.post("/api/reseller/upload-media", async (req, res) => {
     const buffer = Buffer.from(matches[2], "base64");
     formData.append(tipo === "logo" ? "logo" : "banner", buffer, { filename: fileName });
 
-    const phpUploadUrl = "https://itdoctorbrasil.site/Launchers/Luna/upload.php";
+    const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
     console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
     
     const phpResponse = await axios.post(phpUploadUrl, formData, {
