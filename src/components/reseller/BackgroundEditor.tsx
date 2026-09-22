@@ -154,10 +154,10 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
         <div>
           <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-400" />
-            Gerenciamento de Backgrounds & Carrossel HD
+            Gerenciamento do Background
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Configure as imagens de fundo e o nível de escurecimento para leitura na TV do cliente.
+            Você pode carregar suas próprias imagens de fundo, inserir links diretos para imagens ou usar os fundos pré-definidos
           </p>
         </div>
 
@@ -190,7 +190,7 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Image className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-white text-base">Planos de Fundo da Tela Inicial</h3>
+                <h3 className="font-bold text-white text-base">Background da tela inicial</h3>
               </div>
               <span className="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded font-mono">
                 1920x1080 HD
