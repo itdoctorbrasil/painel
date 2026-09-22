@@ -577,10 +577,11 @@ app.post("/api/reseller/upload-media", async (req, res) => {
     console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
     return res.json(phpResponse.data);
   } catch (error: any) {
-    console.error("❌ Erro detalhado no proxy de upload:", error.response?.data || error.message);
+    const phpErrorMessage = error.response?.data?.message || error.message;
+    console.error("❌ Erro detalhado no proxy de upload:", phpErrorMessage);
     return res.status(500).json({ 
       success: false, 
-      message: `Erro ao comunicar com o servidor de upload: ${error.message}` 
+      message: `Erro ao comunicar com o servidor de upload: ${phpErrorMessage}` 
     });
   }
 });
