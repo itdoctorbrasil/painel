@@ -202,7 +202,7 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
               <label className="block text-slate-300 font-semibold text-xs flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                  Enviar Imagem do Fundo do Servidor
+                  Faça o upload das suas imagens
                 </span>
                 {uploading && <span className="text-indigo-400 font-mono text-[10px] animate-pulse">A enviar imagem...</span>}
               </label>
