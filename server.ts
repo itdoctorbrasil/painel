@@ -271,18 +271,21 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp e logoUrl)
+// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp, logoUrl e dueDate)
 // -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, reseller, isExpired } = await resolveLayoutAndClient(mac, token);
+  const { layout, reseller, client, isExpired } = await resolveLayoutAndClient(mac, token);
 
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
   const logoUrl = layout?.logoUrl || "";
+  
+  // Extrai a data de vencimento no formato YYYY-MM-DD para o letreiro de aviso
+  const dueDate = client?.expirationDate ? client.expirationDate.split("T")[0] : "";
 
   if (isExpired) {
     return res.json({
@@ -294,6 +297,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
       whatsappUrl,
       qrCodeImageUrl,
       logoUrl,
+      dueDate,
       total: 0,
       apps: []
     });
@@ -327,6 +331,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
     whatsappUrl,
     qrCodeImageUrl,
     logoUrl,
+    dueDate,
     total: formattedApps.length,
     apps: formattedApps
   });
@@ -338,13 +343,14 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 const handleImgJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
-  const { layout, reseller, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
+  const { layout, reseller, client, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
 
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
   const logoUrl = layout?.logoUrl || "";
+  const dueDate = client?.expirationDate ? client.expirationDate.split("T")[0] : "";
 
   if (isExpired) {
     const blockedUrl = isNewClient ? NEW_CLIENT_IMAGE_URL : EXPIRATION_IMAGE_URL;
@@ -357,6 +363,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
       whatsappUrl,
       qrCodeImageUrl,
       logoUrl,
+      dueDate,
       backgroundUrl: blockedUrl,
       bg_url: blockedUrl,
       img_url: blockedUrl,
@@ -381,6 +388,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     whatsappUrl,
     qrCodeImageUrl,
     logoUrl,
+    dueDate,
     backgroundUrl: primaryUrl,
     bg_url: primaryUrl,
     img_url: primaryUrl,
