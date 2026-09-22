@@ -226,7 +226,7 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
                 ) : (
                   <Upload className="w-4 h-4 text-indigo-400" />
                 )}
-                <span>{uploading ? "Salvando no Servidor..." : "Selecionar Imagem do Computador ou Celular (Upload Automático)"}</span>
+                <span>{uploading ? "Salvando no Servidor..." : "Enviar fundo customizado"}</span>
               </button>
 
               <div className="relative flex py-2 items-center">
