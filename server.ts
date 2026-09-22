@@ -538,6 +538,48 @@ app.post("/api/reseller/whatsapp", async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// ENDPOINT DE PROXY PARA UPLOAD DE BANNERS E LOGOS NA HOSPEDAGEM
+// -------------------------------------------------------------
+app.post("/api/reseller/upload-media", async (req, res) => {
+  try {
+    const { resellerId, fileBase64, fileName, tipo } = req.body;
+
+    if (!resellerId || !fileBase64 || !fileName) {
+      return res.status(400).json({ success: false, message: "Dados incompletos para o upload." });
+    }
+
+    const FormData = (await import("form-data")).default;
+    const axios = (await import("axios")).default;
+
+    const formData = new FormData();
+    formData.append("id_revenda", resellerId);
+    formData.append("tipo", tipo || "banner"); // 'logo' ou 'banner'
+
+    const matches = fileBase64.match(/^data:(.+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, message: "Formato Base64 inválido." });
+    }
+
+    const buffer = Buffer.from(matches[2], "base64");
+    formData.append(tipo === "logo" ? "logo" : "banner", buffer, { filename: fileName });
+
+    const phpUploadUrl = "https://itdoctorbrasil.site/Launchers/Luna/upload.php";
+    
+    const phpResponse = await axios.post(phpUploadUrl, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        "X-Api-Key": "REV-VIP-8822"
+      }
+    });
+
+    return res.json(phpResponse.data);
+  } catch (error: any) {
+    console.error("Erro no proxy de upload:", error.message);
+    return res.status(500).json({ success: false, message: "Erro ao comunicar com o servidor de upload." });
+  }
+});
+
+// -------------------------------------------------------------
 // GESTÃO DE CLIENTES
 // -------------------------------------------------------------
 app.get("/api/reseller/clients", async (req, res) => {
