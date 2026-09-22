@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, AppLayout } from '../../types';
 import { TvPreviewMockup } from '../common/TvPreviewMockup';
 import { BACKGROUND_PRESETS } from '../../services/mockData';
-import { Image, Save, Check, Plus, Trash2, Layers, Link as LinkIcon } from 'lucide-react';
+import { Image, Save, Check, Plus, Trash2, Layers, Link as LinkIcon, Upload } from 'lucide-react';
 
 interface BackgroundEditorProps {
   currentUser: User;
@@ -27,8 +27,11 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
   const [apps, setApps] = useState<any[]>([]);
 
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (layout) {
@@ -56,6 +59,60 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
       setBackgroundUrl(updatedList[0]);
       setNewUrlInput('');
     }
+  };
+
+  // Função para lidar com o upload do arquivo de imagem do banner
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validação básica de tipo
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Formato não permitido. Use JPG, PNG ou WebP.');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      try {
+        const base64String = reader.result as string;
+
+        const response = await fetch('/api/reseller/upload-media', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resellerId: targetResellerId,
+            fileBase64: base64String,
+            fileName: file.name,
+            tipo: 'banner'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.url) {
+          const updatedList = [...backgrounds, data.url];
+          setBackgrounds(updatedList);
+          setBackgroundUrl(updatedList[0]);
+        } else {
+          setError(data.message || 'Erro ao enviar a imagem.');
+        }
+      } catch (err: any) {
+        setError('Erro de conexão ao enviar o arquivo.');
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      setError('Erro ao ler o arquivo selecionado.');
+    };
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -140,12 +197,44 @@ export const BackgroundEditor: React.FC<BackgroundEditorProps> = ({
               </span>
             </div>
 
-            {/* Input de URL Direta expandido ocupando a largura total */}
-            <div>
-              <label className="block text-slate-300 font-semibold text-xs mb-2 flex items-center gap-1.5">
-                <LinkIcon className="w-3.5 h-3.5 text-indigo-400" />
-                Adicionar Nova Imagem por URL Direta
+            {/* Input de Upload Direto e URL */}
+            <div className="space-y-3">
+              <label className="block text-slate-300 font-semibold text-xs flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                  Enviar Imagem do Fundo do Servidor
+                </span>
+                {uploading && <span className="text-indigo-400 font-mono text-[10px] animate-pulse">A enviar imagem...</span>}
               </label>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full border-2 border-dashed border-indigo-500/40 hover:border-indigo-500 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-300 font-semibold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-inner"
+              >
+                {uploading ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-indigo-400 border-t-transparent rounded-full" />
+                ) : (
+                  <Upload className="w-4 h-4 text-indigo-400" />
+                )}
+                <span>{uploading ? "Salvando no Servidor..." : "Selecionar Imagem do Computador ou Celular (Upload Automático)"}</span>
+              </button>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-mono">ou adicione por URL direta</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
               <div className="flex gap-2">
                 <input
                   type="url"
