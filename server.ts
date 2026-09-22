@@ -543,6 +543,7 @@ app.post("/api/reseller/whatsapp", async (req, res) => {
 app.post("/api/reseller/upload-media", async (req, res) => {
   try {
     const { resellerId, fileBase64, fileName, tipo } = req.body;
+    console.log(`📥 Recebida requisição de upload para o revendedor: ${resellerId}, tipo: ${tipo}`);
 
     if (!resellerId || !fileBase64 || !fileName) {
       return res.status(400).json({ success: false, message: "Dados incompletos para o upload." });
@@ -564,6 +565,7 @@ app.post("/api/reseller/upload-media", async (req, res) => {
     formData.append(tipo === "logo" ? "logo" : "banner", buffer, { filename: fileName });
 
     const phpUploadUrl = "https://itdoctorbrasil.site/Launchers/Luna/upload.php";
+    console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
     
     const phpResponse = await axios.post(phpUploadUrl, formData, {
       headers: {
@@ -572,10 +574,14 @@ app.post("/api/reseller/upload-media", async (req, res) => {
       }
     });
 
+    console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
     return res.json(phpResponse.data);
   } catch (error: any) {
-    console.error("Erro no proxy de upload:", error.message);
-    return res.status(500).json({ success: false, message: "Erro ao comunicar com o servidor de upload." });
+    console.error("❌ Erro detalhado no proxy de upload:", error.response?.data || error.message);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Erro ao comunicar com o servidor de upload: ${error.message}` 
+    });
   }
 });
 
