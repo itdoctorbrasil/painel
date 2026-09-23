@@ -153,3 +153,23 @@ export async function fetchLauncherVersion(): Promise<LauncherVersionResponse> {
   const res = await fetch(`${API_BASE}/api/v1/launcher/version`, { headers: defaultHeaders });
   return res.json();
 }
+
+// <--- Nova função adicionada para suportar o upload de mídia e vídeos de boot
+export async function uploadMediaApi(resellerId: string, fileBase64: string, fileName: string, tipo: string) {
+  const res = await fetch(`${API_BASE}/api/reseller/upload-media`, {
+    method: 'POST',
+    headers: defaultHeaders,
+    body: JSON.stringify({
+      resellerId,
+      fileBase64,
+      fileName,
+      tipo
+    })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Erro ao enviar arquivo.');
+  }
+  return data;
+}
