@@ -412,7 +412,7 @@ export default function App() {
                         {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id)).length}
                       </h3>
                     </div>
-                    <p className="text-xs text-slate-400 mt-4">TV Boxes cadastradas</p>
+                    <p className="text-xs text-slate-400 mt-4">TV Boxes e Smart TVs cadastradas</p>
                   </div>
 
                   <div 
@@ -442,13 +442,13 @@ export default function App() {
                   >
                     <div>
                       <span className="text-rose-400 text-xs font-mono uppercase tracking-wider group-hover:underline block mb-2">
-                        Expirados ou Bloqueados ➔
+                        Expirados / Bloqueados ➔
                       </span>
                       <h3 className="text-4xl font-black text-rose-400">
                         {clients.filter(c => c.resellerId === (activeResellerView ? activeResellerView.id : currentUser.id) && (c.status === 'expired' || c.status === 'suspended' || new Date(c.expirationDate) < new Date())).length}
                       </h3>
                     </div>
-                    <p className="text-xs text-slate-400 mt-4">Exigem renovação</p>
+                    <p className="text-xs text-slate-400 mt-4">Exigem renovação de plano</p>
                   </div>
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function App() {
                 </div>
                 <h3 className="text-xl font-black text-white">Acesso Restrito</h3>
                 <p className="text-xs text-slate-400">
-                  Esta seção de gerenciamento de atualizações OTA é exclusiva para o Administrador do sistema.
+                  Esta seção de gerenciamento de atualizações OTA é exclusiva para o Administrador Master do sistema.
                 </p>
                 <button
                   onClick={() => handleTabChange('dashboard')}
