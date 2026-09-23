@@ -2,9 +2,21 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import mongoose from "mongoose";
+import nodemailer from "nodemailer";
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || "";
+
+// Configuração do Transporter de E-mail para os alertas de vencimento
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.hostinger.com",
+  port: Number(process.env.SMTP_PORT || 465),
+  secure: true,
+  auth: {
+    user: process.env.SMTP_USER || "admin@itdoctorbrasil.site",
+    pass: process.env.SMTP_PASS || "SUA_SENHA_AQUI"
+  }
+});
 
 const EXPIRATION_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/expiration.webp";
 const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/newclient.webp";
@@ -27,7 +39,7 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose com suporte a whatsapp, showWhatsapp e logoUrl
+// Definição dos Schemas do Mongoose com suporte a createdAt e expirationDate para controle de revendedores
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -39,7 +51,8 @@ const userSchema = new mongoose.Schema({
   status: String,
   whatsapp: String,
   showWhatsapp: { type: Boolean, default: true },
-  createdAt: String,
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  expirationDate: { type: String, default: () => new Date(Date.now() + 365 * 86400000).toISOString() }, // 1 ano por padrão
   lastLogin: String
 });
 
@@ -114,7 +127,68 @@ const disableCache = (res: express.Response) => {
   res.setHeader("Expires", "0");
 };
 
-// Seed seguro: cria o Master e OTA padrões se o banco estiver totalmente vazio
+// Formata data ISO para o padrão brasileiro DD-MM-YYYY
+function formatDateBR(isoString: string): string {
+  if (!isoString) return "-";
+  try {
+    const date = new Date(isoString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return isoString.split("T")[0] || "-";
+  }
+}
+
+// Rotina diária para verificar contas no último dia de validade e disparar o e-mail
+async function checkAndSendExpirationAlerts() {
+  try {
+    const resellers = await User.find({ role: "reseller" });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const rev of resellers) {
+      if (!rev.expirationDate) {
+        rev.createdAt = rev.createdAt || new Date().toISOString();
+        const base = new Date(rev.createdAt);
+        base.setFullYear(base.getFullYear() + 1);
+        rev.expirationDate = base.toISOString();
+        await rev.save();
+        continue;
+      }
+
+      const expDate = new Date(rev.expirationDate);
+      expDate.setHours(0, 0, 0, 0);
+
+      // Dispara o alerta se hoje for exatamente o dia do vencimento
+      if (expDate.getTime() === today.getTime()) {
+        const emailBody = `Painel Luna Launcher - Conta próxima ao vencimento
+Revendedor: ${rev.name}
+Data de criação: ${formatDateBR(rev.createdAt)}
+Data de vencimento: ${formatDateBR(rev.expirationDate)}
+Contato: ${rev.whatsapp || "Não informado"}
+E-mail: ${rev.email}`;
+
+        await transporter.sendMail({
+          from: `"Painel Luna Launcher" <${process.env.SMTP_USER || "admin@itdoctorbrasil.site"}>`,
+          to: process.env.ADMIN_ALERT_EMAIL || "admin@itdoctorbrasil.site",
+          subject: `⚠️ Painel Luna Launcher - Conta próxima ao vencimento (${rev.name})`,
+          text: emailBody
+        });
+
+        console.log(`📧 E-mail de alerta de vencimento enviado para o revendedor: ${rev.name}`);
+      }
+    }
+  } catch (err) {
+    console.error("❌ Erro ao verificar vencimentos de revendedores:", err);
+  }
+}
+
+// Executa a verificação de vencimentos a cada 24 horas
+setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
+
+// Seed seguro: cria o Master e OTA padrões e padroniza contas de revendedores existentes
 async function seedDatabase() {
   const masterExists = await User.findOne({ id: "usr_master" });
   if (!masterExists) {
@@ -128,8 +202,28 @@ async function seedDatabase() {
       whatsapp: "5511999999999",
       showWhatsapp: true,
       createdAt: new Date().toISOString(),
+      expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
       lastLogin: new Date().toISOString()
     });
+  }
+
+  // Padroniza revendedores já cadastrados que não possuam data de criação ou vencimento
+  const allResellers = await User.find({ role: "reseller" });
+  for (const r of allResellers) {
+    let modified = false;
+    if (!r.createdAt) {
+      r.createdAt = new Date().toISOString();
+      modified = true;
+    }
+    if (!r.expirationDate) {
+      const base = new Date(r.createdAt);
+      base.setFullYear(base.getFullYear() + 1);
+      r.expirationDate = base.toISOString();
+      modified = true;
+    }
+    if (modified) {
+      await r.save();
+    }
   }
 
   const masterLayout = await Layout.findOne({ resellerId: "usr_master" });
@@ -160,6 +254,9 @@ async function seedDatabase() {
       updatedAt: new Date().toISOString()
     });
   }
+
+  // Executa uma verificação ao iniciar
+  checkAndSendExpirationAlerts();
 }
 
 /**
@@ -453,7 +550,7 @@ app.get("/api/admin/resellers", async (req, res) => {
 });
 
 app.post("/api/admin/resellers", async (req, res) => {
-  const { id, name, email, password, resellerToken, clientLimit, status, whatsapp, showWhatsapp } = req.body;
+  const { id, name, email, password, resellerToken, clientLimit, status, whatsapp, showWhatsapp, createdAt, expirationDate } = req.body;
 
   if (!name || !email) {
     return res.status(400).json({ message: "Nome e Email são obrigatórios." });
@@ -474,6 +571,8 @@ app.post("/api/admin/resellers", async (req, res) => {
     if (status) user.status = status;
     user.whatsapp = cleanWhatsapp;
     if (showWhatsapp !== undefined) user.showWhatsapp = Boolean(showWhatsapp);
+    if (createdAt) user.createdAt = createdAt;
+    if (expirationDate) user.expirationDate = expirationDate;
 
     await user.save();
     return res.json(user);
@@ -486,6 +585,15 @@ app.post("/api/admin/resellers", async (req, res) => {
     const newResellerId = "usr_rev_" + Date.now();
     const token = resellerToken ? resellerToken.trim().toUpperCase() : `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+    const regDate = createdAt ? new Date(createdAt).toISOString() : new Date().toISOString();
+    let expDate = expirationDate ? new Date(expirationDate).toISOString() : "";
+    
+    if (!expDate) {
+      const base = new Date(regDate);
+      base.setFullYear(base.getFullYear() + 1);
+      expDate = base.toISOString();
+    }
+
     const newReseller = await User.create({
       id: newResellerId,
       name,
@@ -497,7 +605,8 @@ app.post("/api/admin/resellers", async (req, res) => {
       status: status || "active",
       whatsapp: cleanWhatsapp,
       showWhatsapp: showWhatsapp !== undefined ? Boolean(showWhatsapp) : true,
-      createdAt: new Date().toISOString()
+      createdAt: regDate,
+      expirationDate: expDate
     });
 
     await Layout.create({
