@@ -845,7 +845,7 @@ app.post("/api/reseller/layout", async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// AUTENTICAÇÃO E ESTATÍSTICAS
+// AUTENTICAÇÃO E ESTATÍSTICAS (Com bloqueio para contas expiradas)
 // -------------------------------------------------------------
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
@@ -859,6 +859,21 @@ app.post("/api/auth/login", async (req, res) => {
                   (user.role === "master" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin"));
 
   if (!isValid) return res.status(401).json({ message: "Senha incorreta." });
+
+  // Validação de expiração para revendedores
+  if (user.role === "reseller" && user.expirationDate) {
+    const now = new Date();
+    const expDate = new Date(user.expirationDate);
+    now.setHours(0, 0, 0, 0);
+    expDate.setHours(0, 0, 0, 0);
+
+    if (now > expDate || user.status === "blocked") {
+      return res.status(403).json({ 
+        expired: true, 
+        message: "Seus acessos estão expirados, entre em contato com o administrador do painel" 
+      });
+    }
+  }
 
   return res.json({
     token: `session_${user.id}_${Date.now()}`,
