@@ -34,9 +34,9 @@ import { AppGridEditor } from './components/reseller/AppGridEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 import { WhatsappConfig } from './components/reseller/WhatsappConfig';
-import { LogoConfig } from './components/reseller/LogoConfig'; // <--- Nova aba de Logo Customizada importada
+import { LogoConfig } from './components/reseller/LogoConfig';
 
-import { LogIn, Lock, Mail } from 'lucide-react';
+import { LogIn, Lock, Mail, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   // 1. Persistência de Sessão: Recupera o usuário do localStorage ao recarregar (F5)
@@ -52,6 +52,7 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [expiredModalMessage, setExpiredModalMessage] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
   // 2. Sincronização de Abas com a URL
@@ -101,12 +102,17 @@ export default function App() {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
+    setExpiredModalMessage(null);
     try {
       const res = await loginApi(email.trim(), password.trim());
       setCurrentUser(res.user);
       handleTabChange('dashboard');
     } catch (err: any) {
-      setLoginError(err.message || 'Credenciais inválidas. Verifique seu e-mail e senha.');
+      if (err.expired) {
+        setExpiredModalMessage(err.message || 'Seus acessos estão expirados, entre em contato com o administrador do painel');
+      } else {
+        setLoginError(err.message || 'Credenciais inválidas. Verifique seu e-mail e senha.');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -227,6 +233,28 @@ export default function App() {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-between text-slate-100 p-4 relative overflow-hidden font-sans">
+        
+        {/* Modal de Tela Cheia para Contas Expiradas */}
+        {expiredModalMessage && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md p-6 text-center">
+            <div className="max-w-md w-full bg-slate-900 border border-rose-500/40 p-8 rounded-3xl shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+              <div className="w-20 h-20 bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                <AlertTriangle className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-tight">Acesso Expirado</h2>
+              <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                {expiredModalMessage}
+              </p>
+              <button
+                onClick={() => setExpiredModalMessage(null)}
+                className="w-full mt-2 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer"
+              >
+                Voltar à Tela de Login
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
