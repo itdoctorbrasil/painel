@@ -63,6 +63,7 @@ const layoutSchema = new mongoose.Schema({
   backgrounds: [String],
   overlayOpacity: Number,
   logoUrl: { type: String, default: "" }, // <--- Suporte à logo customizada do revendedor
+  bootVideoUrl: { type: String, default: "" }, // <--- Novo suporte ao vídeo de boot customizado
   apps: Array,
   updatedAt: String
 });
@@ -235,6 +236,7 @@ async function seedDatabase() {
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
       logoUrl: "",
+      bootVideoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -354,6 +356,7 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
       logoUrl: "",
+      bootVideoUrl: "",
       apps: defaultApps
     };
   }
@@ -368,7 +371,7 @@ function extractDeviceCredentials(req: express.Request) {
 }
 
 // -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp, logoUrl e dueDate)
+// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp, logoUrl, bootVideoUrl e dueDate)
 // -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
@@ -380,8 +383,8 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
   const logoUrl = layout?.logoUrl || "";
+  const bootVideoUrl = layout?.bootVideoUrl || "";
   
-  // Extrai a data de vencimento no formato YYYY-MM-DD para o letreiro de aviso
   const dueDate = client?.expirationDate ? client.expirationDate.split("T")[0] : "";
 
   if (isExpired) {
@@ -394,6 +397,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
       whatsappUrl,
       qrCodeImageUrl,
       logoUrl,
+      bootVideoUrl,
       dueDate,
       total: 0,
       apps: []
@@ -428,6 +432,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
     whatsappUrl,
     qrCodeImageUrl,
     logoUrl,
+    bootVideoUrl,
     dueDate,
     total: formattedApps.length,
     apps: formattedApps
@@ -447,6 +452,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(whatsappUrl)}`;
   const showWhatsapp = reseller?.showWhatsapp ?? true;
   const logoUrl = layout?.logoUrl || "";
+  const bootVideoUrl = layout?.bootVideoUrl || "";
   const dueDate = client?.expirationDate ? client.expirationDate.split("T")[0] : "";
 
   if (isExpired) {
@@ -460,6 +466,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
       whatsappUrl,
       qrCodeImageUrl,
       logoUrl,
+      bootVideoUrl,
       dueDate,
       backgroundUrl: blockedUrl,
       bg_url: blockedUrl,
@@ -485,6 +492,7 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     whatsappUrl,
     qrCodeImageUrl,
     logoUrl,
+    bootVideoUrl,
     dueDate,
     backgroundUrl: primaryUrl,
     bg_url: primaryUrl,
@@ -616,6 +624,7 @@ app.post("/api/admin/resellers", async (req, res) => {
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
       logoUrl: "",
+      bootVideoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -663,7 +672,7 @@ app.post("/api/reseller/upload-media", async (req, res) => {
 
     const formData = new FormData();
     formData.append("id_revenda", resellerId);
-    formData.append("tipo", tipo || "banner"); // 'logo' ou 'banner'
+    formData.append("tipo", tipo || "banner"); // 'logo', 'banner' ou 'bootvideo'
 
     const matches = fileBase64.match(/^data:(.+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
@@ -671,7 +680,10 @@ app.post("/api/reseller/upload-media", async (req, res) => {
     }
 
     const buffer = Buffer.from(matches[2], "base64");
-    formData.append(tipo === "logo" ? "logo" : "banner", buffer, { filename: fileName });
+    
+    // Define a chave do form-data conforme o tipo esperado pelo PHP
+    const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
+    formData.append(fieldKey, buffer, { filename: fileName });
 
     const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
     console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
@@ -797,7 +809,7 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// GESTÃO DE LAYOUTS (Incluindo suporte à logoUrl)
+// GESTÃO DE LAYOUTS (Incluindo suporte à logoUrl e bootVideoUrl)
 // -------------------------------------------------------------
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
@@ -811,6 +823,7 @@ app.get("/api/reseller/layout/:resellerId", async (req, res) => {
       backgrounds: defaultBackgrounds,
       overlayOpacity: 0.35,
       logoUrl: "",
+      bootVideoUrl: "",
       apps: defaultApps,
       updatedAt: new Date().toISOString()
     });
@@ -819,7 +832,7 @@ app.get("/api/reseller/layout/:resellerId", async (req, res) => {
 });
 
 app.post("/api/reseller/layout", async (req, res) => {
-  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, apps } = req.body;
+  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, bootVideoUrl, apps } = req.body;
   const targetId = resellerId || "usr_master";
 
   const existingLayout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
@@ -831,6 +844,7 @@ app.post("/api/reseller/layout", async (req, res) => {
     backgrounds: backgrounds || existingLayout?.backgrounds || defaultBackgrounds,
     overlayOpacity: Number(overlayOpacity ?? existingLayout?.overlayOpacity ?? 0.35),
     logoUrl: logoUrl !== undefined ? logoUrl : (existingLayout?.logoUrl || ""),
+    bootVideoUrl: bootVideoUrl !== undefined ? bootVideoUrl : (existingLayout?.bootVideoUrl || ""),
     apps: Array.isArray(apps) ? apps : (existingLayout?.apps || defaultApps),
     updatedAt: new Date().toISOString()
   };
