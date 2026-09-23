@@ -154,22 +154,51 @@ export async function fetchLauncherVersion(): Promise<LauncherVersionResponse> {
   return res.json();
 }
 
-// <--- Nova função adicionada para suportar o upload de mídia e vídeos de boot
-export async function uploadMediaApi(resellerId: string, fileBase64: string, fileName: string, tipo: string) {
-  const res = await fetch(`${API_BASE}/api/reseller/upload-media`, {
-    method: 'POST',
-    headers: defaultHeaders,
-    body: JSON.stringify({
+// Função de upload atualizada com suporte a barra de progresso (onProgress)
+export async function uploadMediaApi(
+  resellerId: string, 
+  fileBase64: string, 
+  fileName: string, 
+  tipo: string,
+  onProgress?: (percent: number) => void
+) {
+  return new Promise<any>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/api/reseller/upload-media`, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Accept', 'application/json');
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded * 100) / event.total);
+          onProgress(percentComplete);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(data.message || 'Erro ao enviar arquivo.'));
+        }
+      } catch (e) {
+        reject(new Error('Erro na resposta do servidor.'));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Erro de rede ao tentar enviar o arquivo.'));
+    };
+
+    xhr.send(JSON.stringify({
       resellerId,
       fileBase64,
       fileName,
       tipo
-    })
+    }));
   });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.message || 'Erro ao enviar arquivo.');
-  }
-  return data;
 }
