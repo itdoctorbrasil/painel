@@ -42,10 +42,9 @@ export const BootVideoConfig: React.FC<BootVideoConfigProps> = ({
       const formData = new FormData();
       formData.append('id_revenda', resellerId);
       formData.append('tipo', 'bootvideo');
-      formData.append('bootvideo', file); // O PHP espera o campo 'bootvideo' para vídeos
+      formData.append('bootvideo', file, file.name);
 
       const xhr = new XMLHttpRequest();
-      // Envio direto para o endpoint PHP da hospedagem
       xhr.open('POST', 'https://itdoctorbrasil.site/painel-luna/clientes/upload.php', true);
       xhr.setRequestHeader('X-Api-Key', 'REV-VIP-8822');
       xhr.setRequestHeader('Accept', 'application/json');
@@ -80,7 +79,7 @@ export const BootVideoConfig: React.FC<BootVideoConfigProps> = ({
       };
 
       xhr.onerror = () => {
-        setErrorMsg('Erro de rede ou bloqueio de CORS ao tentar enviar o vídeo diretamente.');
+        setErrorMsg('Erro de rede ou bloqueio de CORS ao tentar enviar o vídeo.');
         setUploading(false);
       };
 
