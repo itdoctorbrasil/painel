@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
         {currentUser.role === 'master' && (
           <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
             <Eye className="w-4 h-4 text-indigo-400" />
-            <span className="text-slate-400 hidden sm:inline font-medium">Ver como Revenda:</span>
+            <span className="text-slate-400 hidden sm:inline font-medium">Ver como Revendedor:</span>
             <select
               value={activeResellerView ? activeResellerView.id : ''}
               onChange={(e) => {
@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="bg-indigo-500 text-white text-[10px] font-mono px-1.5 py-0.2 rounded font-bold">
                 Build {otaVersion.versionCode}
               </span>
-            </button>
+            </button>  
           ) : (
             <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-400 select-none shadow-sm">
               <Download className="w-3.5 h-3.5 text-slate-500" />
