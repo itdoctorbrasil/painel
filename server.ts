@@ -39,7 +39,7 @@ const defaultApps = [
   { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose com suporte a createdAt e expirationDate para controle de revendedores
+// Definição dos Schemas do Mongoose
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema({
   whatsapp: String,
   showWhatsapp: { type: Boolean, default: true },
   createdAt: { type: String, default: () => new Date().toISOString() },
-  expirationDate: { type: String, default: () => new Date(Date.now() + 365 * 86400000).toISOString() }, // 1 ano por padrão
+  expirationDate: { type: String, default: () => new Date(Date.now() + 365 * 86400000).toISOString() },
   lastLogin: String
 });
 
@@ -62,8 +62,8 @@ const layoutSchema = new mongoose.Schema({
   backgroundUrl: String,
   backgrounds: [String],
   overlayOpacity: Number,
-  logoUrl: { type: String, default: "" }, // <--- Suporte à logo customizada do revendedor
-  bootVideoUrl: { type: String, default: "" }, // <--- Novo suporte ao vídeo de boot customizado
+  logoUrl: { type: String, default: "" },
+  bootVideoUrl: { type: String, default: "" },
   apps: Array,
   updatedAt: String
 });
@@ -128,7 +128,6 @@ const disableCache = (res: express.Response) => {
   res.setHeader("Expires", "0");
 };
 
-// Formata data ISO para o padrão brasileiro DD-MM-YYYY
 function formatDateBR(isoString: string): string {
   if (!isoString) return "-";
   try {
@@ -142,7 +141,6 @@ function formatDateBR(isoString: string): string {
   }
 }
 
-// Rotina diária para verificar contas no último dia de validade e disparar o e-mail
 async function checkAndSendExpirationAlerts() {
   try {
     const resellers = await User.find({ role: "reseller" });
@@ -162,7 +160,6 @@ async function checkAndSendExpirationAlerts() {
       const expDate = new Date(rev.expirationDate);
       expDate.setHours(0, 0, 0, 0);
 
-      // Dispara o alerta se hoje for exatamente o dia do vencimento
       if (expDate.getTime() === today.getTime()) {
         const emailBody = `Painel Luna Launcher - Conta próxima ao vencimento
 Revendedor: ${rev.name}
@@ -177,8 +174,6 @@ E-mail: ${rev.email}`;
           subject: `⚠️ Painel Luna Launcher - Conta próxima ao vencimento (${rev.name})`,
           text: emailBody
         });
-
-        console.log(`📧 E-mail de alerta de vencimento enviado para o revendedor: ${rev.name}`);
       }
     }
   } catch (err) {
@@ -186,10 +181,8 @@ E-mail: ${rev.email}`;
   }
 }
 
-// Executa a verificação de vencimentos a cada 24 horas
 setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
 
-// Seed seguro: cria o Master e OTA padrões e padroniza contas de revendedores existentes
 async function seedDatabase() {
   const masterExists = await User.findOne({ id: "usr_master" });
   if (!masterExists) {
@@ -208,7 +201,6 @@ async function seedDatabase() {
     });
   }
 
-  // Padroniza revendedores já cadastrados que não possuam data de criação ou vencimento
   const allResellers = await User.find({ role: "reseller" });
   for (const r of allResellers) {
     let modified = false;
@@ -257,13 +249,9 @@ async function seedDatabase() {
     });
   }
 
-  // Executa uma verificação ao iniciar
   checkAndSendExpirationAlerts();
 }
 
-/**
- * Resolução Multi-Tenant isolada por Token e MAC
- */
 async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
@@ -370,9 +358,6 @@ function extractDeviceCredentials(req: express.Request) {
   return { mac: rawMac, token: rawToken };
 }
 
-// -------------------------------------------------------------
-// ENDPOINTS PÚBLICOS DO LAUNCHER (Incluindo dados de WhatsApp, showWhatsapp, logoUrl, bootVideoUrl e dueDate)
-// -------------------------------------------------------------
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
   const { mac, token } = extractDeviceCredentials(req);
@@ -384,7 +369,6 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
   const showWhatsapp = reseller?.showWhatsapp ?? true;
   const logoUrl = layout?.logoUrl || "";
   const bootVideoUrl = layout?.bootVideoUrl || "";
-  
   const dueDate = client?.expirationDate ? client.expirationDate.split("T")[0] : "";
 
   if (isExpired) {
@@ -537,9 +521,6 @@ const handleVersionJson = async (req: express.Request, res: express.Response) =>
 app.get("/version.json", handleVersionJson);
 app.get("/api/v1/launcher/version.json", handleVersionJson);
 
-// -------------------------------------------------------------
-// ENDPOINTS ADMIN E GESTÃO DE REVENDEDORES
-// -------------------------------------------------------------
 app.get("/api/admin/resellers", async (req, res) => {
   disableCache(res);
   const resellers = await User.find({ role: "reseller" });
@@ -640,7 +621,6 @@ app.delete("/api/admin/resellers/:id", async (req, res) => {
   return res.json({ status: "success" });
 });
 
-// Endpoint para o Revendedor atualizar o WhatsApp e a chave ON/OFF
 app.post("/api/reseller/whatsapp", async (req, res) => {
   const { resellerId, whatsapp, showWhatsapp } = req.body;
   if (!resellerId) return res.status(400).json({ message: "ID do revendedor obrigatório." });
@@ -656,80 +636,58 @@ app.post("/api/reseller/whatsapp", async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// ENDPOINT DE PROXY PARA UPLOAD DE BANNERS, LOGOS E VÍDEOS DE BOOT (MULTIPART)
+// ENDPOINT DE PROXY PARA UPLOAD (Abordagem Base64 / Buffer fiável)
 // -------------------------------------------------------------
 app.post("/api/reseller/upload-media", async (req, res) => {
   try {
-    const busboy = (await import("busboy")).default;
+    const { resellerId, fileBase64, fileName, tipo } = req.body;
+    console.log(`📥 Recebida requisição de upload para o revendedor: ${resellerId}, tipo: ${tipo}`);
+
+    if (!resellerId || !fileBase64 || !fileName) {
+      return res.status(400).json({ success: false, message: "Dados incompletos para o upload." });
+    }
+
     const FormData = (await import("form-data")).default;
     const axios = (await import("axios")).default;
 
-    const bb = busboy({ headers: req.headers });
-    let resellerId = "";
-    let tipo = "banner";
-    let fileBuffer: Buffer | null = null;
-    let fileName = "file.mp4";
-    let mimeType = "video/mp4";
+    const formData = new FormData();
+    formData.append("id_revenda", resellerId);
+    formData.append("tipo", tipo || "banner");
 
-    bb.on('field', (name, val) => {
-      if (name === 'resellerId' || name === 'id_revenda') resellerId = val;
-      if (name === 'tipo') tipo = val;
+    const matches = fileBase64.match(/^data:(.+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, message: "Formato Base64 inválido." });
+    }
+
+    const buffer = Buffer.from(matches[2], "base64");
+    
+    const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
+    formData.append(fieldKey, buffer, { filename: fileName });
+
+    const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
+    console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
+    
+    const phpResponse = await axios.post(phpUploadUrl, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        "X-Api-Key": "REV-VIP-8822"
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
     });
 
-    bb.on('file', (name, file, info) => {
-      fileName = info.filename;
-      mimeType = info.mimeType;
-      const chunks: Buffer[] = [];
-      file.on('data', (chunk) => chunks.push(chunk));
-      file.on('end', () => {
-        fileBuffer = Buffer.concat(chunks);
-      });
-    });
-
-    bb.on('close', async () => {
-      if (!resellerId || !fileBuffer) {
-        return res.status(400).json({ success: false, message: "Dados incompletos ou arquivo ausente para o upload." });
-      }
-
-      const formData = new FormData();
-      formData.append("id_revenda", resellerId);
-      formData.append("tipo", tipo); // 'logo', 'banner' ou 'bootvideo'
-
-      const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
-      formData.append(fieldKey, fileBuffer, { filename: fileName, contentType: mimeType });
-
-      const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
-      console.log(`🌐 A reencaminhar upload binário para o PHP: ${phpUploadUrl}`);
-
-      try {
-        const phpResponse = await axios.post(phpUploadUrl, formData, {
-          headers: {
-            ...formData.getHeaders(),
-            "X-Api-Key": "REV-VIP-8822"
-          },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity
-        });
-
-        console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
-        return res.json(phpResponse.data);
-      } catch (phpErr: any) {
-        const phpErrMsg = phpErr.response?.data?.message || phpErr.message;
-        console.error("❌ Erro no PHP remoto:", phpErrMsg);
-        return res.status(500).json({ success: false, message: `Erro no servidor de upload: ${phpErrMsg}` });
-      }
-    });
-
-    req.pipe(bb);
+    console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
+    return res.json(phpResponse.data);
   } catch (error: any) {
-    console.error("❌ Erro crítico no proxy de upload:", error.message);
-    return res.status(500).json({ success: false, message: `Erro interno no upload: ${error.message}` });
+    const phpErrorMessage = error.response?.data?.message || error.message;
+    console.error("❌ Erro detalhado no proxy de upload:", phpErrorMessage);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Erro ao comunicar com o servidor de upload: ${phpErrorMessage}` 
+    });
   }
 });
 
-// -------------------------------------------------------------
-// GESTÃO DE CLIENTES
-// -------------------------------------------------------------
 app.get("/api/reseller/clients", async (req, res) => {
   disableCache(res);
   const { resellerId } = req.query;
@@ -828,9 +786,6 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
   return res.json({ status: "success" });
 });
 
-// -------------------------------------------------------------
-// GESTÃO DE LAYOUTS (Incluindo suporte à logoUrl e bootVideoUrl)
-// -------------------------------------------------------------
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
   let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
@@ -878,9 +833,6 @@ app.post("/api/reseller/layout", async (req, res) => {
   return res.json(layout);
 });
 
-// -------------------------------------------------------------
-// AUTENTICAÇÃO E ESTATÍSTICAS (Com bloqueio para contas expiradas)
-// -------------------------------------------------------------
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   const cleanEmail = (email || "").trim().toLowerCase();
@@ -894,7 +846,6 @@ app.post("/api/auth/login", async (req, res) => {
 
   if (!isValid) return res.status(401).json({ message: "Senha incorreta." });
 
-  // Validação de expiração para revendedores
   if (user.role === "reseller" && user.expirationDate) {
     const now = new Date();
     const expDate = new Date(user.expirationDate);
