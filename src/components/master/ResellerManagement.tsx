@@ -11,11 +11,12 @@ import {
   Search,
   Lock,
   LayoutGrid,
-  List
+  List,
+  Calendar
 } from 'lucide-react';
 
 interface ResellerManagementProps {
-  resellers: (User & { totalClients: number; activeClients: number })[];
+  resellers: (User & { totalClients: number; activeClients: number; createdAt?: string; expirationDate?: string })[];
   onSaveReseller: (data: Partial<User>) => Promise<void>;
   onDeleteReseller: (id: string) => Promise<void>;
   onSelectResellerForImpersonation: (reseller: User) => void;
@@ -30,11 +31,11 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReseller, setEditingReseller] = useState<Partial<User> | null>(null);
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card'); // Estado para alternar visualização
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states com o campo password incluído
+  // Form states incluindo createdAt e expirationDate formatados para input type="date" (YYYY-MM-DD)
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -42,10 +43,29 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
     password: '',
     resellerToken: '',
     clientLimit: 50,
-    status: 'active' as 'active' | 'blocked'
+    status: 'active' as 'active' | 'blocked',
+    createdAt: new Date().toISOString().split('T')[0],
+    expirationDate: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0]
   });
 
+  const formatDateBR = (isoString?: string) => {
+    if (!isoString) return '-';
+    try {
+      const date = new Date(isoString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch (e) {
+      return isoString.split('T')[0] || '-';
+    }
+  };
+
   const openCreateModal = () => {
+    const today = new Date();
+    const oneYearLater = new Date();
+    oneYearLater.setFullYear(today.getFullYear() + 1);
+
     setFormData({
       id: '',
       name: '',
@@ -53,23 +73,32 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
       password: '',
       resellerToken: `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       clientLimit: 50,
-      status: 'active'
-    });
+      status: 'active',
+      createdAt: today.toISOString().split('T')[0],
+      expirationDate: oneYearLater.toISOString().split('T')[0]
+  });
     setEditingReseller(null);
     setError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (r: User) => {
+  const openEditModal = (r: any) => {
+    const formatInputDate = (isoStr?: string) => {
+      if (!isoStr) return new Date().toISOString().split('T')[0];
+      return isoStr.split('T')[0];
+    };
+
     setFormData({
       id: r.id,
       name: r.name,
       email: r.email,
-      password: '', // Em branco por padrão na edição para não sobrescrever a menos que altere
+      password: '',
       resellerToken: r.resellerToken || '',
       clientLimit: r.clientLimit || 50,
-      status: r.status
-    });
+      status: r.status,
+      createdAt: formatInputDate(r.createdAt),
+      expirationDate: formatInputDate(r.expirationDate)
+  });
     setEditingReseller(r);
     setError(null);
     setIsModalOpen(true);
@@ -81,7 +110,11 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
     setError(null);
 
     try {
-      await onSaveReseller(formData);
+      await onSaveReseller({
+        ...formData,
+        createdAt: new Date(formData.createdAt).toISOString(),
+        expirationDate: new Date(formData.expirationDate).toISOString()
+      });
       setIsModalOpen(false);
     } catch (err: any) {
       setError(err.message || 'Erro ao salvar revendedor');
@@ -117,7 +150,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
             Gestão de Revendedores White-Label
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Cadastre revendas, defina limite máximo de telas/clientes e controle acesso aos layouts do Luna
+            Cadastre revendas, controle os prazos de vencimento anual e limites de telas
           </p>
         </div>
 
@@ -151,7 +184,6 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
-            title="Visualização em Cards"
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Cards
           </button>
@@ -162,7 +194,6 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
-            title="Visualização em Lista / Tabela"
           >
             <List className="w-3.5 h-3.5" /> Lista
           </button>
@@ -171,7 +202,6 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
 
       {/* Content View: Card vs List */}
       {viewMode === 'card' ? (
-        /* Resellers Grid (Cards) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((r) => (
             <div key={r.id} className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between transition group">
@@ -195,20 +225,34 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 </div>
 
                 {/* Token Display */}
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-4 font-mono text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-3 font-mono text-xs">
                   <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                     <Key className="w-3 h-3 text-amber-400" /> Token de Integração Luna API:
                   </div>
                   <span className="text-amber-300 font-bold text-sm tracking-wide">{r.resellerToken}</span>
                 </div>
 
+                {/* Datas de Criação e Vencimento */}
+                <div className="bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/60 mb-3 text-[11px] flex justify-between items-center text-slate-300">
+                  <div>
+                    <span className="text-slate-500 block text-[9px] uppercase">Criação</span>
+                    <span className="font-semibold text-slate-300">{formatDateBR(r.createdAt)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-500 block text-[9px] uppercase">Vencimento Anual</span>
+                    <span className="font-bold text-indigo-400 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" /> {formatDateBR(r.expirationDate)}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Stats Bar */}
                 <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                  <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800 text-center">
                     <span className="text-slate-400 block text-[10px] uppercase">Dispositivos Ativos</span>
                     <span className="text-emerald-400 font-black text-base">{r.activeClients || 0}</span>
                   </div>
-                  <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800 text-center">
                     <span className="text-slate-400 block text-[10px] uppercase">Limite de Telas</span>
                     <span className="text-indigo-300 font-black text-base">{r.clientLimit || 50}</span>
                   </div>
@@ -239,12 +283,11 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-              </div>
             </div>
+          </div>
           ))}
         </div>
       ) : (
-        /* Resellers Table (Lista Compacta) */
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300">
@@ -252,6 +295,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                 <tr>
                   <th className="p-4">Revendedor / E-mail</th>
                   <th className="p-4">Token Luna API</th>
+                  <th className="p-4">Criação / Vencimento</th>
                   <th className="p-4 text-center">Dispositivos / Limite</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Ações</th>
@@ -266,6 +310,10 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                         <div className="text-slate-400 text-xs">{r.email}</div>
                       </td>
                       <td className="p-4 font-mono text-amber-300 font-bold">{r.resellerToken || '-'}</td>
+                      <td className="p-4 text-slate-300">
+                        <div>Criado: <span className="text-white">{formatDateBR(r.createdAt)}</span></div>
+                        <div className="text-indigo-400 font-bold">Vence: {formatDateBR(r.expirationDate)}</div>
+                      </td>
                       <td className="p-4 text-center">
                         <span className="text-emerald-400 font-bold text-sm">{r.activeClients || 0}</span>
                         <span className="text-slate-500"> / {r.clientLimit || 50} telas</span>
@@ -306,7 +354,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-500">
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
                       Nenhum revendedor encontrado.
                     </td>
                   </tr>
@@ -320,13 +368,13 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
       {/* Modal Form Create / Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             
             <h3 className="text-lg font-bold text-white mb-1">
               {editingReseller ? 'Editar Revendedor' : 'Cadastrar Novo Revendedor'}
             </h3>
             <p className="text-xs text-slate-400 mb-5">
-              Defina os dados de login e o token de autenticação dos aparelhos
+              Defina os dados de login, token e controle as datas de criação e vencimento anual
             </p>
 
             {error && (
@@ -397,7 +445,30 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, resellerToken: e.target.value.toUpperCase() })}
                   className="w-full bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">Este token é inserido nas configurações do Luna Launcher na TV Box.</p>
+              </div>
+
+              {/* Campos de Datas: Criação e Vencimento Anual */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Data de Criação</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.createdAt}
+                    onChange={(e) => setFormData({ ...formData, createdAt: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Vencimento (Anual)</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.expirationDate}
+                    onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-semibold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
