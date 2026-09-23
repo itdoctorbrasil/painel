@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { User, AppLayout } from '../../types';
 import { Video, Upload, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { uploadMediaApi } from '../../services/api';
 
 interface BootVideoConfigProps {
   currentUser: User;
@@ -39,45 +38,57 @@ export const BootVideoConfig: React.FC<BootVideoConfigProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const reader = new FileReader();
+    try {
+      const formData = new FormData();
+      formData.append('id_revenda', resellerId);
+      formData.append('tipo', 'bootvideo');
+      formData.append('bootvideo', file); // O PHP espera o campo 'bootvideo' para vídeos
 
-    reader.onerror = () => {
-      setErrorMsg('Erro ao ler o arquivo de vídeo localmente.');
-      setUploading(false);
-    };
+      const xhr = new XMLHttpRequest();
+      // Envio direto para o endpoint PHP da hospedagem
+      xhr.open('POST', 'https://itdoctorbrasil.site/painel-luna/clientes/upload.php', true);
+      xhr.setRequestHeader('X-Api-Key', 'REV-VIP-8822');
+      xhr.setRequestHeader('Accept', 'application/json');
 
-    reader.onload = async () => {
-      try {
-        setUploadProgress(30);
-        const base64 = reader.result as string;
-
-        // Chama a API com callback de progresso via XMLHttpRequest
-        const res = await uploadMediaApi(resellerId, base64, file.name, 'bootvideo', (percent) => {
-          // Mapeia o progresso do upload de rede de 30% a 95%
-          const scaled = 30 + Math.round(percent * 0.65);
-          setUploadProgress(scaled);
-        });
-
-        if (res && res.success && res.url) {
-          setUploadProgress(98);
-          await onSaveLayout({
-            ...layout,
-            bootVideoUrl: res.url
-          });
-          setUploadProgress(100);
-          setSuccessMsg('Vídeo de boot atualizado com sucesso!');
-        } else {
-          setErrorMsg(res?.message || 'Erro desconhecido retornado pelo servidor.');
-        }
-      } catch (err: any) {
-        console.error('Erro no upload do vídeo:', err);
-        setErrorMsg(err.message || 'Erro de comunicação ao enviar o vídeo.');
-      } finally {
-        setUploading(false);
+      if (xhr.upload) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded * 100) / event.total);
+            setUploadProgress(percent);
+          }
+        };
       }
-    };
 
-    reader.readAsDataURL(file);
+      xhr.onload = async () => {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && res.success && res.url) {
+            setUploadProgress(100);
+            await onSaveLayout({
+              ...layout,
+              bootVideoUrl: res.url
+            });
+            setSuccessMsg('Vídeo de boot atualizado com sucesso!');
+          } else {
+            setErrorMsg(res.message || 'Erro retornado pelo servidor de upload.');
+          }
+        } catch (err) {
+          setErrorMsg('Erro ao processar a resposta do servidor PHP.');
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      xhr.onerror = () => {
+        setErrorMsg('Erro de rede ou bloqueio de CORS ao tentar enviar o vídeo diretamente.');
+        setUploading(false);
+      };
+
+      xhr.send(formData);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao preparar o arquivo para envio.');
+      setUploading(false);
+    }
   };
 
   const handleRemoveVideo = async () => {
