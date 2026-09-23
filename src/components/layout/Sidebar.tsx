@@ -1,6 +1,6 @@
 import React from 'react';
-import { User } from '../../types';
 import { 
+  User, 
   LayoutDashboard, 
   Users, 
   DownloadCloud, 
@@ -10,7 +10,8 @@ import {
   Shield, 
   Image as ImageIcon,
   AppWindow,
-  QrCode
+  QrCode,
+  Video
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isMaster = currentUser.role === 'master' && !activeResellerView;
 
-  // Menu do Master Admin (Com suporte à Logo Customizada)
+  // Menu do Master Admin
   const masterNav = [
     { id: 'dashboard', label: 'Estatísticas Globais', icon: LayoutDashboard },
     { id: 'resellers', label: 'Revendedores', icon: Users },
@@ -38,18 +39,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'all_clients', label: 'Todos os Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Gerenciar Backgrounds', icon: ImageIcon },
     { id: 'apps_editor', label: 'Gerenciar Grade de Apps', icon: AppWindow },
-    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon }, // <--- Adicionado aqui também para o Master
+    { id: 'boot_video', label: 'Bootvideo abertura', icon: Video },
+    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
     { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
   ];
 
-  // Menu do Revendedor (Incluindo a nova opção de Logo Customizada)
+  // Menu do Revendedor (Com Bootvideo abertura logo abaixo de Grade de Apps)
   const resellerNav = [
     { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
+    { id: 'boot_video', label: 'Bootvideo abertura', icon: Video },
     { id: 'whatsapp_qr', label: 'QR Code WhatsApp', icon: QrCode },
-    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon }, // <--- Adicionado aqui para os revendedores
+    { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
     { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
   ];
 
