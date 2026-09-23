@@ -656,54 +656,74 @@ app.post("/api/reseller/whatsapp", async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// ENDPOINT DE PROXY PARA UPLOAD DE BANNERS E LOGOS NA HOSPEDAGEM
+// ENDPOINT DE PROXY PARA UPLOAD DE BANNERS, LOGOS E VÍDEOS DE BOOT (MULTIPART)
 // -------------------------------------------------------------
 app.post("/api/reseller/upload-media", async (req, res) => {
   try {
-    const { resellerId, fileBase64, fileName, tipo } = req.body;
-    console.log(`📥 Recebida requisição de upload para o revendedor: ${resellerId}, tipo: ${tipo}`);
-
-    if (!resellerId || !fileBase64 || !fileName) {
-      return res.status(400).json({ success: false, message: "Dados incompletos para o upload." });
-    }
-
+    const busboy = (await import("busboy")).default;
     const FormData = (await import("form-data")).default;
     const axios = (await import("axios")).default;
 
-    const formData = new FormData();
-    formData.append("id_revenda", resellerId);
-    formData.append("tipo", tipo || "banner"); // 'logo', 'banner' ou 'bootvideo'
+    const bb = busboy({ headers: req.headers });
+    let resellerId = "";
+    let tipo = "banner";
+    let fileBuffer: Buffer | null = null;
+    let fileName = "file.mp4";
+    let mimeType = "video/mp4";
 
-    const matches = fileBase64.match(/^data:(.+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ success: false, message: "Formato Base64 inválido." });
-    }
+    bb.on('field', (name, val) => {
+      if (name === 'resellerId' || name === 'id_revenda') resellerId = val;
+      if (name === 'tipo') tipo = val;
+    });
 
-    const buffer = Buffer.from(matches[2], "base64");
-    
-    // Define a chave do form-data conforme o tipo esperado pelo PHP
-    const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
-    formData.append(fieldKey, buffer, { filename: fileName });
+    bb.on('file', (name, file, info) => {
+      fileName = info.filename;
+      mimeType = info.mimeType;
+      const chunks: Buffer[] = [];
+      file.on('data', (chunk) => chunks.push(chunk));
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(chunks);
+      });
+    });
 
-    const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
-    console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
-    
-    const phpResponse = await axios.post(phpUploadUrl, formData, {
-      headers: {
-        ...formData.getHeaders(),
-        "X-Api-Key": "REV-VIP-8822"
+    bb.on('close', async () => {
+      if (!resellerId || !fileBuffer) {
+        return res.status(400).json({ success: false, message: "Dados incompletos ou arquivo ausente para o upload." });
+      }
+
+      const formData = new FormData();
+      formData.append("id_revenda", resellerId);
+      formData.append("tipo", tipo); // 'logo', 'banner' ou 'bootvideo'
+
+      const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
+      formData.append(fieldKey, fileBuffer, { filename: fileName, contentType: mimeType });
+
+      const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
+      console.log(`🌐 A reencaminhar upload binário para o PHP: ${phpUploadUrl}`);
+
+      try {
+        const phpResponse = await axios.post(phpUploadUrl, formData, {
+          headers: {
+            ...formData.getHeaders(),
+            "X-Api-Key": "REV-VIP-8822"
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
+        });
+
+        console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
+        return res.json(phpResponse.data);
+      } catch (phpErr: any) {
+        const phpErrMsg = phpErr.response?.data?.message || phpErr.message;
+        console.error("❌ Erro no PHP remoto:", phpErrMsg);
+        return res.status(500).json({ success: false, message: `Erro no servidor de upload: ${phpErrMsg}` });
       }
     });
 
-    console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
-    return res.json(phpResponse.data);
+    req.pipe(bb);
   } catch (error: any) {
-    const phpErrorMessage = error.response?.data?.message || error.message;
-    console.error("❌ Erro detalhado no proxy de upload:", phpErrorMessage);
-    return res.status(500).json({ 
-      success: false, 
-      message: `Erro ao comunicar com o servidor de upload: ${phpErrorMessage}` 
-    });
+    console.error("❌ Erro crítico no proxy de upload:", error.message);
+    return res.status(500).json({ success: false, message: `Erro interno no upload: ${error.message}` });
   }
 });
 
