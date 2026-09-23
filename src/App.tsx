@@ -35,6 +35,7 @@ import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 import { WhatsappConfig } from './components/reseller/WhatsappConfig';
 import { LogoConfig } from './components/reseller/LogoConfig';
+import { BootVideoConfig } from './components/reseller/BootVideoConfig'; // <--- Novo componente de Bootvideo importado
 
 import { LogIn, Lock, Mail, AlertTriangle } from 'lucide-react';
 
@@ -516,6 +517,15 @@ export default function App() {
 
           {activeTab === 'apps_editor' && (
             <AppGridEditor
+              currentUser={currentUser}
+              activeResellerView={activeResellerView}
+              layout={layout}
+              onSaveLayout={handleSaveLayout}
+            />
+          )}
+
+          {activeTab === 'boot_video' && (
+            <BootVideoConfig
               currentUser={currentUser}
               activeResellerView={activeResellerView}
               layout={layout}
