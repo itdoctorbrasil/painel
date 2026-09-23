@@ -147,10 +147,10 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
         <div>
           <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-400" />
-            Gestão de Revendedores White-Label
+            Gestão de Revendedores
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Cadastre revendas, controle os prazos de vencimento anual e limites de telas
+            Exibindo todos os revendedores cadastrados no painel
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
           onClick={openCreateModal}
           className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
         >
-          <UserPlus className="w-4 h-4" /> Novo Revendedor
+          <UserPlus className="w-4 h-4" /> Novo
         </button>
       </div>
 
@@ -168,7 +168,7 @@ export const ResellerManagement: React.FC<ResellerManagementProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
           <input
             type="text"
-            placeholder="Buscar por nome, email ou token de revenda..."
+            placeholder="Buscar por nome, telefone ou email"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition"
