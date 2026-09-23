@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || "";
 
-// Configuração do Transporter de E-mail para os alertas de vencimento
+// Configuração do Transporter de E-mail para os alertas de vencimento anual
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.hostinger.com",
   port: Number(process.env.SMTP_PORT || 465),
