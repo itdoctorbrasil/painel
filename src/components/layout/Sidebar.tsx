@@ -41,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'apps_editor', label: 'Gerenciar Grade de Apps', icon: AppWindow },
     { id: 'boot_video', label: 'Bootvideo abertura', icon: Video },
     { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
-    { id: 'api_tester', label: 'Testador de API REST', icon: Code2 }
+    { id: 'api_tester', label: 'Baixar Launcher', icon: Code2 }
   ];
 
   // Menu do Revendedor (Com Bootvideo abertura logo abaixo de Grade de Apps)
