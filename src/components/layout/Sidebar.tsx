@@ -33,12 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Menu do Master Admin
   const masterNav = [
-    { id: 'dashboard', label: 'Estatísticas Globais', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Visão geral', icon: LayoutDashboard },
     { id: 'resellers', label: 'Clientes', icon: Users },
     { id: 'ota', label: 'Atualizações OTA', icon: DownloadCloud },
     { id: 'all_clients', label: 'Todos os dispositivos', icon: UserCheck },
     { id: 'background_editor', label: 'Gerenciar Background', icon: ImageIcon },
-    { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
+    { id: 'apps_editor', label: 'Grade de Aplicativos', icon: AppWindow },
     { id: 'boot_video', label: 'Video abertura', icon: Video },
     { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
     { id: 'api_tester', label: 'Baixar Launcher', icon: Code2 }
@@ -50,10 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
-    { id: 'boot_video', label: 'Bootvideo abertura', icon: Video },
+    { id: 'boot_video', label: 'Video abertura', icon: Video },
     { id: 'whatsapp_qr', label: 'QR Code WhatsApp', icon: QrCode },
     { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
-    { id: 'api_tester', label: 'Download Launcher', icon: Code2 }
+    { id: 'api_tester', label: 'Baixar Launcher', icon: Code2 }
   ];
 
   const navItems = isMaster ? masterNav : resellerNav;
