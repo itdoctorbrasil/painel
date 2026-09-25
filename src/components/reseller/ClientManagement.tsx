@@ -151,10 +151,15 @@ export const ClientManagement: React.FC = ({
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleDelete = async (clientItem: any, name: string) => {
+    const identifier = clientItem.id || clientItem._id;
+    if (!identifier) {
+      alert("Erro: ID do dispositivo não encontrado.");
+      return;
+    }
     if (confirm(`Excluir o dispositivo do cliente "${name}"?`)) {
       try {
-        await onDeleteClient(id);
+        await onDeleteClient(identifier);
       } catch (err: any) {
         alert(err.message || 'Erro ao excluir cliente');
       }
