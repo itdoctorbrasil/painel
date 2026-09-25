@@ -188,7 +188,6 @@ E-mail: ${rev.email}`;
 setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
 
 async function seedDatabase() {
-  // Garante a criação ou reativação correta do acesso master
   await User.findOneAndUpdate(
     { id: "usr_master" },
     {
@@ -955,7 +954,11 @@ app.get("/api/admin/stats", async (req, res) => {
   });
 });
 
-app.get("/api/admin/ota", async (req, res) =>.json(ota));
+app.get("/api/admin/ota", async (req, res) => {
+  const ota = await Ota.findOne({ id: "ota_v210" });
+  return res.json(ota);
+});
+
 app.post("/api/admin/ota", async (req, res) => {
   const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
   
