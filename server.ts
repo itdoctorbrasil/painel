@@ -656,7 +656,7 @@ app.post("/api/admin/resellers", async (req, res) => {
 app.delete("/api/admin/resellers/:id", async (req, res) => {
   const { id } = req.params;
   await User.deleteOne({ id });
-  await Layout.deleteMany({ \(or: [{ resellerId: id }, { id: `lay_\){id}` }] });
+  await Layout.deleteMany({ resellerId: id });
   return res.json({ status: "success" });
 });
 
@@ -831,7 +831,7 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
 
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
-  let layout = await Layout.findOne({ \(or: [{ resellerId: targetId }, { id: `lay_\){targetId}` }] });
+  let layout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
 
   if (!layout) {
     layout = await Layout.create({
@@ -853,7 +853,7 @@ app.post("/api/reseller/layout", async (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, bootVideoUrl, apps } = req.body;
   const targetId = resellerId || "usr_master";
 
-  const existingLayout = await Layout.findOne({ \(or: [{ resellerId: targetId }, { id: `lay_\){targetId}` }] });
+  const existingLayout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
 
   const updatedData = {
     id: "lay_" + targetId,
@@ -868,7 +868,7 @@ app.post("/api/reseller/layout", async (req, res) => {
   };
 
   let layout = await Layout.findOneAndUpdate(
-    { \(or: [{ resellerId: targetId }, { id: `lay_\){targetId}` }] },
+    { resellerId: targetId },
     updatedData,
     { new: true, upsert: true }
   );
