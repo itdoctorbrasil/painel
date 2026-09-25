@@ -33,7 +33,7 @@ export async function getResellersApi(): Promise<(User & { totalClients: number;
   return res.json();
 }
 
-export async function saveResellerApi(data: Partial<User>) {
+export async function saveResellerApi(data: Partial) {
   const res = await fetch(`${API_BASE}/api/admin/resellers`, {
     method: 'POST',
     headers: defaultHeaders,
@@ -47,7 +47,7 @@ export async function saveResellerApi(data: Partial<User>) {
 }
 
 export async function deleteResellerApi(id: string) {
-  const res = await fetch(`${API_BASE}/api/admin/resellers/${id}`, {
+  const res = await fetch(`\({API_BASE}/api/admin/resellers/\){id}`, {
     method: 'DELETE',
     headers: defaultHeaders
   });
@@ -61,13 +61,13 @@ export async function getGlobalStatsApi() {
   return res.json();
 }
 
-export async function getOtaVersionApi(): Promise<OtaVersion> {
+export async function getOtaVersionApi(): Promise {
   const res = await fetch(`${API_BASE}/api/admin/ota`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Erro ao carregar versão OTA');
   return res.json();
 }
 
-export async function saveOtaVersionApi(data: Partial<OtaVersion>) {
+export async function saveOtaVersionApi(data: Partial) {
   const res = await fetch(`${API_BASE}/api/admin/ota`, {
     method: 'POST',
     headers: defaultHeaders,
@@ -80,13 +80,13 @@ export async function saveOtaVersionApi(data: Partial<OtaVersion>) {
   return res.json();
 }
 
-export async function getLayoutApi(resellerId: string): Promise<AppLayout> {
-  const res = await fetch(`${API_BASE}/api/reseller/layout/${resellerId}`, { headers: defaultHeaders });
+export async function getLayoutApi(resellerId: string): Promise {
+  const res = await fetch(`\({API_BASE}/api/reseller/layout/\){resellerId}`, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Erro ao carregar layout');
   return res.json();
 }
 
-export async function saveLayoutApi(layout: Partial<AppLayout>) {
+export async function saveLayoutApi(layout: Partial) {
   const res = await fetch(`${API_BASE}/api/reseller/layout`, {
     method: 'POST',
     headers: defaultHeaders,
@@ -99,8 +99,8 @@ export async function saveLayoutApi(layout: Partial<AppLayout>) {
   return res.json();
 }
 
-export async function getClientsApi(resellerId?: string): Promise<ClientDevice[]> {
-  const url = resellerId ? `${API_BASE}/api/reseller/clients?resellerId=${resellerId}` : `${API_BASE}/api/reseller/clients`;
+export async function getClientsApi(resellerId?: string): Promise {
+  const url = resellerId ? `\({API_BASE}/api/reseller/clients?resellerId=\){resellerId}` : `${API_BASE}/api/reseller/clients`;
   const res = await fetch(url, { headers: defaultHeaders });
   if (!res.ok) throw new Error('Erro ao carregar clientes');
   return res.json();
@@ -112,7 +112,11 @@ export async function saveClientApi(clientData: any) {
     headers: defaultHeaders,
     body: JSON.stringify({
       ...clientData,
-      status: clientData.status || 'active'
+      status: clientData.status || 'active',
+      ethernetMac: clientData.ethernetMac || clientData.ethernet_mac || '',
+      wifiMac: clientData.wifiMac || clientData.wifi_mac || '',
+      cpuId: clientData.cpuId || clientData.cpuid || '',
+      serialNumber: clientData.serialNumber || clientData.serial_number || ''
     })
   });
   if (!res.ok) {
@@ -136,7 +140,7 @@ export async function renewClientApi(id: string, days: number, macAddress?: stri
 }
 
 export async function deleteClientApi(id: string) {
-  const res = await fetch(`${API_BASE}/api/reseller/clients/${id}`, {
+  const res = await fetch(`\({API_BASE}/api/reseller/clients/\){id}`, {
     method: 'DELETE',
     headers: defaultHeaders
   });
@@ -144,17 +148,17 @@ export async function deleteClientApi(id: string) {
   return res.json();
 }
 
-export async function fetchLauncherConfig(token: string): Promise<LauncherConfigResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/launcher/config?token=${encodeURIComponent(token)}`, { headers: defaultHeaders });
+export async function fetchLauncherConfig(token: string): Promise {
+  const res = await fetch(`\({API_BASE}/api/v1/launcher/config?token=\){encodeURIComponent(token)}`, { headers: defaultHeaders });
   return res.json();
 }
 
-export async function fetchLauncherVersion(): Promise<LauncherVersionResponse> {
+export async function fetchLauncherVersion(): Promise {
   const res = await fetch(`${API_BASE}/api/v1/launcher/version`, { headers: defaultHeaders });
   return res.json();
 }
 
-// Função de upload atualizada com suporte a barra de progresso (onProgress)
+// Função de upload com suporte a barra de progresso (onProgress)
 export async function uploadMediaApi(
   resellerId: string, 
   fileBase64: string, 
@@ -162,7 +166,7 @@ export async function uploadMediaApi(
   tipo: string,
   onProgress?: (percent: number) => void
 ) {
-  return new Promise<any>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_BASE}/api/reseller/upload-media`, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
