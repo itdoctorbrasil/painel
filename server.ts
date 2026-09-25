@@ -390,7 +390,7 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string, et
   }
 
   const targetId = reseller ? reseller.id : "usr_master";
-  let layout = await Layout.findOne({ \(or: [{ resellerId: targetId }, { id: `lay_\){targetId}` }] });
+  let layout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
   if (!layout) {
     layout = await Layout.findOne({}) || {
       backgroundUrl: defaultBackgrounds[0],
