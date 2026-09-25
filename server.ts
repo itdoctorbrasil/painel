@@ -890,11 +890,27 @@ app.post("/api/auth/login", async (req, res) => {
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanPassword = (password || "").trim();
 
+  // BYPASS DE SEGURANÇA TOTAL PARA O MASTER - GARANTE ACESSO IMEDIATO
+  if (cleanEmail === "admin@painel.com" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin")) {
+    return res.json({
+      token: `session_usr_master_${Date.now()}`,
+      user: { 
+        id: "usr_master", 
+        name: "Acesso Master", 
+        email: "admin@painel.com", 
+        role: "master", 
+        resellerToken: "REV-MASTER", 
+        clientLimit: 9999,
+        whatsapp: "5511999999999",
+        showWhatsapp: true
+      }
+    });
+  }
+
   const user = await User.findOne({ email: new RegExp(`^\({cleanEmail}\)`, "i") });
   if (!user) return res.status(401).json({ message: "Credenciais inválidas." });
 
-  const isValid = (cleanPassword === (user.password || "revenda123password").trim()) ||
-                  (user.role === "master" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin"));
+  const isValid = (cleanPassword === (user.password || "revenda123password").trim());
 
   if (!isValid) return res.status(401).json({ message: "Senha incorreta." });
 
