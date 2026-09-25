@@ -11,8 +11,7 @@ import {
   Tv,
   LayoutGrid,
   List,
-  Cpu,
-  Network
+  Cpu
 } from 'lucide-react';
 
 interface ClientManagementProps {
@@ -100,7 +99,7 @@ export const ClientManagement: React.FC = ({
     setIsModalOpen(true);
   };
 
-  const openEditModal = (c: ClientDevice & { ethernetMac?: string; wifiMac?: string; cpuId?: string; serialNumber?: string }) => {
+  const openEditModal = (c: any) => {
     const currentExp = c.expirationDate 
       ? new Date(c.expirationDate).toISOString().split('T')[0] 
       : getDefaultExpiration(30);
@@ -185,7 +184,7 @@ export const ClientManagement: React.FC = ({
     setTimeout(() => setCopiedToken(null), 2000);
   };
 
-  const filtered = clients.filter(c => {
+  const filtered = clients.filter((c: any) => {
     if (!isMasterView) {
       const matchesResellerId = c.resellerId === targetResellerId;
       const matchesToken = targetResellerToken && c.deviceToken && c.deviceToken.includes(targetResellerToken);
