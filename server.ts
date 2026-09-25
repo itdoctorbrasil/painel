@@ -7,7 +7,6 @@ import nodemailer from "nodemailer";
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || "";
 
-// Configuração do Transporter de E-mail para os alertas de vencimento anual
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.hostinger.com",
   port: Number(process.env.SMTP_PORT || 465),
@@ -36,10 +35,9 @@ const defaultApps = [
   { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
   { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
   { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-  { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
+  { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
-// Definição dos Schemas do Mongoose com os campos de blindagem de hardware
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -188,23 +186,22 @@ E-mail: ${rev.email}`;
 setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
 
 async function seedDatabase() {
-  await User.findOneAndUpdate(
-    { id: "usr_master" },
-    {
-      id: "usr_master",
-      name: "Acesso Master",
-      email: "admin@painel.com",
-      password: "2b079e541af29b37f713",
-      role: "master",
-      status: "active",
-      whatsapp: "5511999999999",
-      showWhatsapp: true,
-      createdAt: new Date().toISOString(),
-      expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
-      lastLogin: new Date().toISOString()
-    },
-    { upsert: true, new: true }
-  );
+  await User.deleteMany({ email: "admin@painel.com" });
+  await User.deleteMany({ id: "usr_master" });
+
+  await User.create({
+    id: "usr_master",
+    name: "Acesso Master",
+    email: "admin@painel.com",
+    password: "2b079e541af29b37f713",
+    role: "master",
+    status: "active",
+    whatsapp: "5511999999999",
+    showWhatsapp: true,
+    createdAt: new Date().toISOString(),
+    expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
+    lastLogin: new Date().toISOString()
+  });
 
   const allResellers = await User.find({ role: "reseller" });
   for (const r of allResellers) {
@@ -815,13 +812,10 @@ app.post("/api/reseller/clients/renew", async (req, res) => {
   return res.json(client);
 });
 
-// Rota de exclusão blindada e universal (suporta ID customizado e _id do MongoDB)
 app.delete("/api/reseller/clients/:id", async (req, res) => {
   try {
     const rawId = req.params.id;
     const id = decodeURIComponent(rawId).trim();
-    console.log(`🗑️ Pedido para excluir cliente com ID: "${id}"`);
-
     let result = { deletedCount: 0 };
 
     result = await Client.deleteOne({ id: id });
@@ -834,15 +828,12 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
       result = await Client.deleteOne({ _id: id as any });
     }
 
-    console.log(`📊 Resultado da exclusão:`, result);
-
     if (result.deletedCount > 0) {
       return res.json({ status: "success", deletedCount: result.deletedCount });
     } else {
       return res.status(404).json({ message: "Dispositivo não encontrado para exclusão." });
     }
   } catch (err: any) {
-    console.error("❌ Erro ao excluir cliente:", err);
     return res.status(500).json({ message: "Erro ao excluir cliente: " + err.message });
   }
 });
