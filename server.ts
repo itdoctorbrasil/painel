@@ -188,9 +188,10 @@ E-mail: ${rev.email}`;
 setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
 
 async function seedDatabase() {
-  const masterExists = await User.findOne({ id: "usr_master" });
-  if (!masterExists) {
-    await User.create({
+  // Garante a criação ou reativação correta do acesso master
+  await User.findOneAndUpdate(
+    { id: "usr_master" },
+    {
       id: "usr_master",
       name: "Acesso Master",
       email: "admin@painel.com",
@@ -202,8 +203,9 @@ async function seedDatabase() {
       createdAt: new Date().toISOString(),
       expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
       lastLogin: new Date().toISOString()
-    });
-  }
+    },
+    { upsert: true, new: true }
+  );
 
   const allResellers = await User.find({ role: "reseller" });
   for (const r of allResellers) {
@@ -814,17 +816,34 @@ app.post("/api/reseller/clients/renew", async (req, res) => {
   return res.json(client);
 });
 
-// Rota de exclusão corrigida para suportar ID customizado e _id do MongoDB
+// Rota de exclusão blindada e universal (suporta ID customizado e _id do MongoDB)
 app.delete("/api/reseller/clients/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    let query: any = { id: id };
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      query = { $or: [{ id: id }, { _id: id }] };
+    const rawId = req.params.id;
+    const id = decodeURIComponent(rawId).trim();
+    console.log(`🗑️ Pedido para excluir cliente com ID: "${id}"`);
+
+    let result = { deletedCount: 0 };
+
+    result = await Client.deleteOne({ id: id });
+
+    if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(id)) {
+      result = await Client.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
     }
-    const result = await Client.deleteOne(query);
-    return res.json({ status: "success", deletedCount: result.deletedCount });
+
+    if (result.deletedCount === 0) {
+      result = await Client.deleteOne({ _id: id as any });
+    }
+
+    console.log(`📊 Resultado da exclusão:`, result);
+
+    if (result.deletedCount > 0) {
+      return res.json({ status: "success", deletedCount: result.deletedCount });
+    } else {
+      return res.status(404).json({ message: "Dispositivo não encontrado para exclusão." });
+    }
   } catch (err: any) {
+    console.error("❌ Erro ao excluir cliente:", err);
     return res.status(500).json({ message: "Erro ao excluir cliente: " + err.message });
   }
 });
@@ -936,11 +955,7 @@ app.get("/api/admin/stats", async (req, res) => {
   });
 });
 
-app.get("/api/admin/ota", async (req, res) => {
-  const ota = await Ota.findOne({ id: "ota_v210" });
-  return res.json(ota);
-});
-
+app.get("/api/admin/ota", async (req, res) =>.json(ota));
 app.post("/api/admin/ota", async (req, res) => {
   const { versionCode, versionName, downloadUrl, forceUpdate, releaseNotes } = req.body;
   
