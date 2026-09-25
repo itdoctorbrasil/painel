@@ -103,18 +103,23 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
 
   const [formData, setFormData] = useState({
+
     id: '',
+
     resellerId: targetResellerId,
+
     clientName: '',
+
     macAddress: '',
-    ethernetMac: '',
-    wifiMac: '',
-    cpuId: '',
-    serialNumber: '',
+
     deviceToken: '',
+
     expirationDate: getDefaultExpiration(30),
+
     status: 'active' as 'active' | 'suspended' | 'expired',
+
     notes: ''
+
   });
 
 
@@ -177,28 +182,42 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
 
 
-  const openEditModal = (c: any) => {
+  const openEditModal = (c: ClientDevice) => {
+
     const currentExp = c.expirationDate 
+
       ? new Date(c.expirationDate).toISOString().split('T')[0] 
+
       : getDefaultExpiration(30);
 
+
+
     setFormData({
+
       id: c.id,
+
       resellerId: c.resellerId,
+
       clientName: c.clientName,
-      macAddress: c.macAddress || '',
-      ethernetMac: c.ethernetMac || '',
-      wifiMac: c.wifiMac || '',
-      cpuId: c.cpuId || '',
-      serialNumber: c.serialNumber || '',
+
+      macAddress: c.macAddress,
+
       deviceToken: c.deviceToken,
+
       expirationDate: currentExp,
+
       status: c.status,
+
       notes: c.notes || ''
+
     });
+
     setEditingClient(c);
+
     setError(null);
+
     setIsModalOpen(true);
+
   };
 
 
@@ -232,18 +251,23 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
 
     try {
+
       await onSaveClient({
+
         ...formData,
+
         macAddress: cleanMac,
-        ethernetMac: formData.ethernetMac.trim().toUpperCase(),
-        wifiMac: formData.wifiMac.trim().toUpperCase(),
-        cpuId: formData.cpuId.trim(),
-        serialNumber: formData.serialNumber.trim(),
+
         deviceToken: tokenToSave,
+
         resellerId: targetResellerId,
+
         expirationDate: new Date(formData.expirationDate).toISOString()
+
       });
+
       setIsModalOpen(false);
+
     } catch (err: any) {
 
       setError(err.message || 'Erro ao salvar cliente');
