@@ -33,10 +33,10 @@ const defaultBackgrounds = [
 
 const defaultApps = [
   { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
-  { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
+  { id: 2, name: "Cinema", packageName: "com.cinema.app", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/cinema.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/cinema.apk" },
   { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
   { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-  { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
+  { id: 5, name: "MemoryClean", packageName: "com.oranth.memoryclean", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/Clientes/FgTech/Apps/icones/memoryclean.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/Clientes/FgTech/Apps/MemoryClean.apk" }
 ];
 
 // Definição dos Schemas do Mongoose
