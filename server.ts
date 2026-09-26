@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || "";
 
+// Configuração do Transporter de E-mail para os alertas de vencimento anual
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.hostinger.com",
   port: Number(process.env.SMTP_PORT || 465),
@@ -35,9 +36,10 @@ const defaultApps = [
   { id: 2, name: "YouCine", packageName: "com.world.youcinetv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youcine.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk" },
   { id: 3, name: "YouTube TV", packageName: "com.google.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
   { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
-  { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/store/bestapps.apk" }
+  { id: 5, name: "Best Apps", packageName: "com.itdoctorbrasil.store", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/store.png", deepLink: "https://itdoctorbrasil.site/store/bestapps.apk" }
 ];
 
+// Definição dos Schemas do Mongoose
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true },
   name: String,
@@ -71,10 +73,6 @@ const clientSchema = new mongoose.Schema({
   resellerId: String,
   clientName: String,
   macAddress: String,
-  ethernetMac: { type: String, default: "" },
-  wifiMac: { type: String, default: "" },
-  cpuId: { type: String, default: "" },
-  serialNumber: { type: String, default: "" },
   deviceToken: String,
   expirationDate: String,
   status: String,
@@ -105,14 +103,14 @@ const app = express();
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Mac-Address', 'X-Ethernet-Mac', 'X-Wifi-Mac', 'X-Cpuid', 'X-Serial-Number'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Mac-Address'],
   credentials: false
 }));
 
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, X-Mac-Address, X-Ethernet-Mac, X-Wifi-Mac, X-Cpuid, X-Serial-Number');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, X-Mac-Address');
   res.sendStatus(200);
 });
 
@@ -137,7 +135,7 @@ function formatDateBR(isoString: string): string {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    return `\({day}-\){month}-${year}`;
+    return `${day}-${month}-${year}`;
   } catch (e) {
     return isoString.split("T")[0] || "-";
   }
@@ -186,22 +184,22 @@ E-mail: ${rev.email}`;
 setInterval(checkAndSendExpirationAlerts, 24 * 60 * 60 * 1000);
 
 async function seedDatabase() {
-  await User.deleteMany({ email: "admin@painel.com" });
-  await User.deleteMany({ id: "usr_master" });
-
-  await User.create({
-    id: "usr_master",
-    name: "Acesso Master",
-    email: "admin@painel.com",
-    password: "2b079e541af29b37f713",
-    role: "master",
-    status: "active",
-    whatsapp: "5511999999999",
-    showWhatsapp: true,
-    createdAt: new Date().toISOString(),
-    expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
-    lastLogin: new Date().toISOString()
-  });
+  const masterExists = await User.findOne({ id: "usr_master" });
+  if (!masterExists) {
+    await User.create({
+      id: "usr_master",
+      name: "Acesso Master",
+      email: "admin@painel.com",
+      password: "2b079e541af29b37f713",
+      role: "master",
+      status: "active",
+      whatsapp: "5511999999999",
+      showWhatsapp: true,
+      createdAt: new Date().toISOString(),
+      expirationDate: new Date(Date.now() + 3650 * 86400000).toISOString(),
+      lastLogin: new Date().toISOString()
+    });
+  }
 
   const allResellers = await User.find({ role: "reseller" });
   for (const r of allResellers) {
@@ -254,51 +252,22 @@ async function seedDatabase() {
   checkAndSendExpirationAlerts();
 }
 
-function extractDeviceCredentials(req: express.Request) {
-  const rawMac = (req.query.mac as string || req.headers["x-mac-address"] as string || "").trim();
-  const rawToken = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
-  const ethernetMac = cleanHex(req.query.ethernet_mac as string || req.headers["x-ethernet-mac"] as string || "");
-  const wifiMac = cleanHex(req.query.wifi_mac as string || req.headers["x-wifi-mac"] as string || "");
-  const cpuId = (req.query.cpuid as string || req.headers["x-cpuid"] as string || "").trim();
-  const serialNumber = (req.query.serial_number as string || req.headers["x-serial-number"] as string || "").trim();
-  return { mac: rawMac, token: rawToken, ethernetMac, wifiMac, cpuId, serialNumber };
-}
-
-async function resolveLayoutAndClient(macInput?: string, tokenInput?: string, ethMacInput?: string, wifiMacInput?: string, cpuIdInput?: string, serialInput?: string) {
+async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   const cleanMac = cleanHex(decodeURIComponent(macInput || ""));
   const cleanToken = cleanHex(decodeURIComponent(tokenInput || ""));
-  const cleanEth = cleanHex(ethMacInput || "");
-  const cleanWifi = cleanHex(wifiMacInput || "");
-  const cleanCpu = (cpuIdInput || "").trim();
-  const cleanSerial = (serialInput || "").trim();
 
   let reseller: any = null;
   if (cleanToken.length > 0) {
-    reseller = await User.findOne({ resellerToken: new RegExp(`^\({cleanToken}\)`, "i") });
+    reseller = await User.findOne({ resellerToken: new RegExp(`^${cleanToken}$`, "i") });
   }
 
   let client: any = null;
-  const allClients = await Client.find({});
-
-  if (cleanCpu.length > 0 || cleanSerial.length > 0) {
-    client = allClients.find((c: any) => {
-      const dbCpu = (c.cpuId || "").trim();
-      const dbSerial = (c.serialNumber || "").trim();
-      return (cleanCpu.length > 0 && dbCpu === cleanCpu) || (cleanSerial.length > 0 && dbSerial === cleanSerial);
-    });
-  }
-
-  if (!client && (cleanMac.length >= 4 || cleanEth.length >= 4 || cleanWifi.length >= 4)) {
+  if (cleanMac.length >= 4) {
+    const allClients = await Client.find({});
     const matches = allClients.filter((c: any) => {
       const cMac = cleanHex(c.macAddress);
-      const cEth = cleanHex(c.ethernetMac);
-      const cWifi = cleanHex(c.wifiMac);
       const cTok = cleanHex(c.deviceToken);
-
-      return (cMac.length > 0 && (cMac === cleanMac || cMac === cleanEth || cMac === cleanWifi)) ||
-             (cEth.length > 0 && (cEth === cleanEth || cEth === cleanMac)) ||
-             (cWifi.length > 0 && (cWifi === cleanWifi || cWifi === cleanMac)) ||
-             (cTok.length > 0 && cTok === cleanMac);
+      return (cMac.length > 0 && cMac === cleanMac) || (cTok.length > 0 && cTok === cleanMac);
     });
 
     if (matches.length > 0) {
@@ -316,44 +285,24 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string, et
     reseller = await User.findOne({ id: "usr_rev_1" }) || await User.findOne({});
   }
 
-  if (!client && (cleanMac.length >= 4 || cleanEth.length >= 4)) {
-    const primaryMac = cleanEth || cleanWifi || cleanMac;
-    const formattedMac = primaryMac.match(/.{1,2}/g)?.join(":") || primaryMac;
-    const shortId = primaryMac.slice(-6);
+  if (!client && cleanMac.length >= 4) {
+    const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
+    const shortId = cleanMac.slice(-6);
 
     client = {
       id: "cli_" + Date.now(),
       resellerId: reseller ? reseller.id : "usr_rev_1",
       clientName: `Novo dispositivo (${shortId})`,
       macAddress: formattedMac,
-      ethernetMac: cleanEth,
-      wifiMac: cleanWifi,
-      cpuId: cleanCpu,
-      serialNumber: cleanSerial,
       deviceToken: formattedMac,
       expirationDate: new Date().toISOString(),
       status: "pending",
-      notes: "Nova instalação detectada.",
+      notes: "Nova instalação detectada, aguardando liberação.",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
 
     await Client.create(client);
-  } else if (client) {
-    let needsUpdate = false;
-    if (!client.ethernetMac && cleanEth) { client.ethernetMac = cleanEth; needsUpdate = true; }
-    if (!client.wifiMac && cleanWifi) { client.wifiMac = cleanWifi; needsUpdate = true; }
-    if (!client.cpuId && cleanCpu) { client.cpuId = cleanCpu; needsUpdate = true; }
-    if (!client.serialNumber && cleanSerial) { client.serialNumber = cleanSerial; needsUpdate = true; }
-    
-    if (needsUpdate) {
-      await Client.updateOne({ id: client.id }, {
-        ethernetMac: client.ethernetMac,
-        wifiMac: client.wifiMac,
-        cpuId: client.cpuId,
-        serialNumber: client.serialNumber
-      });
-    }
   }
 
   let isExpired = false;
@@ -388,7 +337,7 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string, et
   }
 
   const targetId = reseller ? reseller.id : "usr_master";
-  let layout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
+  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
   if (!layout) {
     layout = await Layout.findOne({}) || {
       backgroundUrl: defaultBackgrounds[0],
@@ -403,10 +352,16 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string, et
   return { client, reseller, layout, isExpired, isNewClient };
 }
 
+function extractDeviceCredentials(req: express.Request) {
+  const rawMac = (req.query.mac as string || req.headers["x-mac-address"] as string || "").trim();
+  const rawToken = (req.query.token as string || req.headers["authorization"]?.replace("Bearer ", "") || "").trim();
+  return { mac: rawMac, token: rawToken };
+}
+
 const handleAppsJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
-  const { mac, token, ethernetMac, wifiMac, cpuId, serialNumber } = extractDeviceCredentials(req);
-  const { layout, reseller, client, isExpired } = await resolveLayoutAndClient(mac, token, ethernetMac, wifiMac, cpuId, serialNumber);
+  const { mac, token } = extractDeviceCredentials(req);
+  const { layout, reseller, client, isExpired } = await resolveLayoutAndClient(mac, token);
 
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
@@ -473,8 +428,8 @@ app.get("/api/v1/launcher/apps.json", handleAppsJson);
 
 const handleImgJson = async (req: express.Request, res: express.Response) => {
   disableCache(res);
-  const { mac, token, ethernetMac, wifiMac, cpuId, serialNumber } = extractDeviceCredentials(req);
-  const { layout, reseller, client, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token, ethernetMac, wifiMac, cpuId, serialNumber);
+  const { mac, token } = extractDeviceCredentials(req);
+  const { layout, reseller, client, isExpired, isNewClient } = await resolveLayoutAndClient(mac, token);
 
   const cleanWhatsapp = reseller?.whatsapp ? reseller.whatsapp.replace(/\D/g, "") : "5511999999999";
   const whatsappUrl = `https://wa.me/+${cleanWhatsapp}`;
@@ -508,7 +463,10 @@ const handleImgJson = async (req: express.Request, res: express.Response) => {
     });
   }
 
-  const imageList = (layout.backgrounds && layout.backgrounds.length > 0) ? layout.backgrounds : defaultBackgrounds;
+  const imageList = (layout.backgrounds && layout.backgrounds.length > 0) 
+    ? layout.backgrounds 
+    : defaultBackgrounds;
+
   const primaryUrl = imageList[0];
 
   return res.json({
@@ -582,7 +540,10 @@ app.get("/api/admin/resellers", async (req, res) => {
 
 app.post("/api/admin/resellers", async (req, res) => {
   const { id, name, email, password, resellerToken, clientLimit, status, whatsapp, showWhatsapp, createdAt, expirationDate } = req.body;
-  if (!name || !email) return res.status(400).json({ message: "Nome e Email são obrigatórios." });
+
+  if (!name || !email) {
+    return res.status(400).json({ message: "Nome e Email são obrigatórios." });
+  }
 
   const cleanEmail = email.trim().toLowerCase();
   const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, "") : "";
@@ -605,8 +566,10 @@ app.post("/api/admin/resellers", async (req, res) => {
     await user.save();
     return res.json(user);
   } else {
-    const existing = await User.findOne({ email: new RegExp(`^\({cleanEmail}\)`, "i") });
-    if (existing) return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
+    const existing = await User.findOne({ email: new RegExp(`^${cleanEmail}$`, "i") });
+    if (existing) {
+      return res.status(400).json({ message: "Já existe um usuário cadastrado com este e-mail." });
+    }
 
     const newResellerId = "usr_rev_" + Date.now();
     const token = resellerToken ? resellerToken.trim().toUpperCase() : `REV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -654,7 +617,7 @@ app.post("/api/admin/resellers", async (req, res) => {
 app.delete("/api/admin/resellers/:id", async (req, res) => {
   const { id } = req.params;
   await User.deleteOne({ id });
-  await Layout.deleteMany({ resellerId: id });
+  await Layout.deleteMany({ $or: [{ resellerId: id }, { id: `lay_${id}` }] });
   return res.json({ status: "success" });
 });
 
@@ -672,9 +635,14 @@ app.post("/api/reseller/whatsapp", async (req, res) => {
   return res.json({ status: "success", whatsapp: user.whatsapp, showWhatsapp: user.showWhatsapp });
 });
 
+// -------------------------------------------------------------
+// ENDPOINT DE PROXY PARA UPLOAD (Abordagem Base64 / Buffer fiável)
+// -------------------------------------------------------------
 app.post("/api/reseller/upload-media", async (req, res) => {
   try {
     const { resellerId, fileBase64, fileName, tipo } = req.body;
+    console.log(`📥 Recebida requisição de upload para o revendedor: ${resellerId}, tipo: ${tipo}`);
+
     if (!resellerId || !fileBase64 || !fileName) {
       return res.status(400).json({ success: false, message: "Dados incompletos para o upload." });
     }
@@ -692,10 +660,13 @@ app.post("/api/reseller/upload-media", async (req, res) => {
     }
 
     const buffer = Buffer.from(matches[2], "base64");
+    
     const fieldKey = tipo === "logo" ? "logo" : (tipo === "bootvideo" ? "bootvideo" : "banner");
     formData.append(fieldKey, buffer, { filename: fileName });
 
     const phpUploadUrl = "https://itdoctorbrasil.site/painel-luna/clientes/upload.php";
+    console.log(`🌐 A reencaminhar upload para o PHP: ${phpUploadUrl}`);
+    
     const phpResponse = await axios.post(phpUploadUrl, formData, {
       headers: {
         ...formData.getHeaders(),
@@ -705,10 +676,15 @@ app.post("/api/reseller/upload-media", async (req, res) => {
       maxBodyLength: Infinity
     });
 
+    console.log("✅ Resposta do PHP recebida com sucesso:", phpResponse.data);
     return res.json(phpResponse.data);
   } catch (error: any) {
     const phpErrorMessage = error.response?.data?.message || error.message;
-    return res.status(500).json({ success: false, message: `Erro ao comunicar com o servidor de upload: ${phpErrorMessage}` });
+    console.error("❌ Erro detalhado no proxy de upload:", phpErrorMessage);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Erro ao comunicar com o servidor de upload: ${phpErrorMessage}` 
+    });
   }
 });
 
@@ -726,7 +702,7 @@ app.get("/api/reseller/clients", async (req, res) => {
 });
 
 app.post("/api/reseller/clients", async (req, res) => {
-  const { id, resellerId, clientName, macAddress, ethernetMac, wifiMac, cpuId, serialNumber, deviceToken, days, expirationDate, status, notes } = req.body;
+  const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
 
   const cleanMac = cleanHex(macAddress || deviceToken);
   const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
@@ -755,10 +731,6 @@ app.post("/api/reseller/clients", async (req, res) => {
   if (client) {
     client.clientName = clientName;
     client.macAddress = formattedMac;
-    if (ethernetMac) client.ethernetMac = ethernetMac.trim().toUpperCase();
-    if (wifiMac) client.wifiMac = wifiMac.trim().toUpperCase();
-    if (cpuId) client.cpuId = cpuId.trim();
-    if (serialNumber) client.serialNumber = serialNumber.trim();
     client.deviceToken = formattedMac;
     client.expirationDate = finalExpDate.toISOString();
     client.status = status || "active";
@@ -773,10 +745,6 @@ app.post("/api/reseller/clients", async (req, res) => {
       resellerId: resellerId || "usr_rev_1",
       clientName,
       macAddress: formattedMac,
-      ethernetMac: ethernetMac ? ethernetMac.trim().toUpperCase() : "",
-      wifiMac: wifiMac ? wifiMac.trim().toUpperCase() : "",
-      cpuId: cpuId ? cpuId.trim() : "",
-      serialNumber: serialNumber ? serialNumber.trim() : "",
       deviceToken: formattedMac,
       expirationDate: finalExpDate.toISOString(),
       status: status || "active",
@@ -813,34 +781,14 @@ app.post("/api/reseller/clients/renew", async (req, res) => {
 });
 
 app.delete("/api/reseller/clients/:id", async (req, res) => {
-  try {
-    const rawId = req.params.id;
-    const id = decodeURIComponent(rawId).trim();
-    let result = { deletedCount: 0 };
-
-    result = await Client.deleteOne({ id: id });
-
-    if (result.deletedCount === 0 && mongoose.Types.ObjectId.isValid(id)) {
-      result = await Client.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
-    }
-
-    if (result.deletedCount === 0) {
-      result = await Client.deleteOne({ _id: id as any });
-    }
-
-    if (result.deletedCount > 0) {
-      return res.json({ status: "success", deletedCount: result.deletedCount });
-    } else {
-      return res.status(404).json({ message: "Dispositivo não encontrado para exclusão." });
-    }
-  } catch (err: any) {
-    return res.status(500).json({ message: "Erro ao excluir cliente: " + err.message });
-  }
+  const { id } = req.params;
+  await Client.deleteOne({ id });
+  return res.json({ status: "success" });
 });
 
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
-  let layout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
+  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
 
   if (!layout) {
     layout = await Layout.create({
@@ -862,7 +810,7 @@ app.post("/api/reseller/layout", async (req, res) => {
   const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, bootVideoUrl, apps } = req.body;
   const targetId = resellerId || "usr_master";
 
-  const existingLayout = await Layout.findOne({ resellerId: targetId }) || await Layout.findOne({ id: `lay_${targetId}` });
+  const existingLayout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
 
   const updatedData = {
     id: "lay_" + targetId,
@@ -877,7 +825,7 @@ app.post("/api/reseller/layout", async (req, res) => {
   };
 
   let layout = await Layout.findOneAndUpdate(
-    { resellerId: targetId },
+    { $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] },
     updatedData,
     { new: true, upsert: true }
   );
@@ -890,27 +838,11 @@ app.post("/api/auth/login", async (req, res) => {
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanPassword = (password || "").trim();
 
-  // BYPASS DE SEGURANÇA TOTAL PARA O MASTER - GARANTE ACESSO IMEDIATO
-  if (cleanEmail === "admin@painel.com" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin")) {
-    return res.json({
-      token: `session_usr_master_${Date.now()}`,
-      user: { 
-        id: "usr_master", 
-        name: "Acesso Master", 
-        email: "admin@painel.com", 
-        role: "master", 
-        resellerToken: "REV-MASTER", 
-        clientLimit: 9999,
-        whatsapp: "5511999999999",
-        showWhatsapp: true
-      }
-    });
-  }
-
-  const user = await User.findOne({ email: new RegExp(`^\({cleanEmail}\)`, "i") });
+  const user = await User.findOne({ email: new RegExp(`^${cleanEmail}$`, "i") });
   if (!user) return res.status(401).json({ message: "Credenciais inválidas." });
 
-  const isValid = (cleanPassword === (user.password || "revenda123password").trim());
+  const isValid = (cleanPassword === (user.password || "revenda123password").trim()) ||
+                  (user.role === "master" && (cleanPassword === "2b079e541af29b37f713" || cleanPassword === "admin"));
 
   if (!isValid) return res.status(401).json({ message: "Senha incorreta." });
 
@@ -929,7 +861,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   return res.json({
-    token: `session_\({user.id}_\){Date.now()}`,
+    token: `session_${user.id}_${Date.now()}`,
     user: { 
       id: user.id, 
       name: user.name, 
