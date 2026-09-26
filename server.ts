@@ -33,8 +33,8 @@ const defaultBackgrounds = [
 
 const defaultApps = [
   { id: 1, name: "Velo Play", packageName: "com.global.veloplaytv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk" },
-  { id: 2, name: "Cinema", packageName: "com.cinema.app", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/cinema.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/cinema.apk" },
-  { id: 3, name: "BrasilTV", packageName: "com.interactive.brasiIiptv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/brasiltv.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/brasiltv.apk" },
+  { id: 2, name: "Settings", packageName: "com.itdoctorbrasil.settings", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/settings.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/Clientes/FgTech/Apps/Settings.apk" },
+  { id: 3, name: "Youtube", packageName: "com.android.youtube.tv", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk" },
   { id: 4, name: "TuneIn", packageName: "tunein.player", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/tuneinradio.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/tunein.apk" },
   { id: 5, name: "MemoryClean", packageName: "com.oranth.memoryclean", iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/Clientes/FgTech/Apps/icones/memoryclean.png", deepLink: "https://itdoctorbrasil.site/Launchers/Luna/Clientes/FgTech/Apps/MemoryClean.apk" }
 ];
