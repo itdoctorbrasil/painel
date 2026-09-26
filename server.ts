@@ -23,12 +23,15 @@ const NEW_CLIENT_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked
 const CONNECTION_LOST_IMAGE_URL = "https://itdoctorbrasil.site/Launchers/Luna/blocked/connectiolost.webp";
 
 const defaultBackgrounds = [
-  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_1.webp",
   "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_2.webp",
   "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_3.webp",
-  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_4.webp",
   "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_5.webp",
-  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp"
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_6.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_7.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_8.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_9.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_11.webp",
+  "https://itdoctorbrasil.site/Launchers/Luna/banners/banner_14.webp"
 ];
 
 const defaultApps = [
