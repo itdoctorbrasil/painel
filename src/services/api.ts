@@ -158,7 +158,6 @@ export async function fetchLauncherVersion(): Promise {
   return res.json();
 }
 
-// Função de upload com suporte a barra de progresso (onProgress)
 export async function uploadMediaApi(
   resellerId: string, 
   fileBase64: string, 
