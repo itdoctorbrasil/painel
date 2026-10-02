@@ -10,7 +10,8 @@ import {
   Calendar,
   Tv,
   LayoutGrid,
-  List
+  List,
+  Lock
 } from 'lucide-react';
 
 interface ClientManagementProps {
@@ -55,7 +56,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     resellerId: targetResellerId,
     clientName: '',
     macAddress: '',
-    deviceToken: '',
+    deviceToken: targetResellerToken || '',
     expirationDate: getDefaultExpiration(30),
     status: 'active' as 'active' | 'suspended' | 'expired',
     notes: ''
@@ -80,7 +81,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
       resellerId: targetResellerId,
       clientName: '',
       macAddress: '',
-      deviceToken: '',
+      deviceToken: targetResellerToken || '', // Bloqueia e define o token fixo da revenda
       expirationDate: getDefaultExpiration(30),
       status: 'active',
       notes: ''
@@ -97,10 +98,10 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
 
     setFormData({
       id: c.id,
-      resellerId: c.resellerId,
+      resellerId: targetResellerId,
       clientName: c.clientName,
       macAddress: c.macAddress,
-      deviceToken: c.deviceToken,
+      deviceToken: targetResellerToken || c.deviceToken || '', // Garante o token fixo do revendedor
       expirationDate: currentExp,
       status: c.status,
       notes: c.notes || ''
@@ -122,7 +123,16 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     }
 
     const cleanMac = formData.macAddress.trim().toUpperCase();
-    const tokenToSave = formData.deviceToken.trim() || `DEV-${cleanMac.replace(/[^A-Z0-9]/g, '')}`;
+    
+    // TRAVAMENTO DE SEGURANÇA: O token do dispositivo deve ser obrigatoriamente
+    // o token único do revendedor atual, evitando qualquer mistura de QR Code/WhatsApp.
+    const tokenToSave = targetResellerToken;
+
+    if (!tokenToSave) {
+      setError('Erro crítico: Token da revenda não encontrado para este usuário.');
+      setLoading(false);
+      return;
+    }
 
     try {
       await onSaveClient({
@@ -170,7 +180,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const filtered = clients.filter(c => {
     if (!isMasterView) {
       const matchesResellerId = c.resellerId === targetResellerId;
-      const matchesToken = targetResellerToken && c.deviceToken && c.deviceToken.includes(targetResellerToken);
+      const matchesToken = targetResellerToken && c.deviceToken && c.deviceToken === targetResellerToken;
       if (!matchesResellerId && !matchesToken) return false;
     }
 
@@ -322,8 +332,8 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   {/* Token */}
                   <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 mb-3 flex items-center justify-between gap-2">
                     <div className="font-mono text-xs overflow-hidden">
-                      <span className="text-[10px] text-slate-500 uppercase block">Token de Ativação:</span>
-                      <span className="text-indigo-300 font-bold truncate block">{c.deviceToken}</span>
+                      <span className="text-[10px] text-slate-500 uppercase block">Token de Ativação (Fixo):</span>
+                      <span className="text-amber-300 font-bold truncate block">{c.deviceToken}</span>
                     </div>
                     <button
                       onClick={() => handleCopyToken(c.deviceToken)}
@@ -550,14 +560,17 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Token de Ativação</label>
+                  <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                    <span>Token de Ativação</span>
+                    <span className="text-[10px] text-indigo-400 flex items-center gap-0.5"><Lock className="w-3 h-3" /> Fixo Automático</span>
+                  </label>
                   <input
                     type="text"
-                    required
-                    placeholder="DEV-AABBCC112233"
-                    value={formData.deviceToken}
-                    onChange={(e) => setFormData({ ...formData, deviceToken: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 text-amber-300 font-mono font-bold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
+                    disabled
+                    readOnly
+                    value={targetResellerToken || formData.deviceToken}
+                    className="w-full bg-slate-950/60 border border-slate-800 text-amber-300 font-mono font-bold rounded-xl p-2.5 opacity-80 cursor-not-allowed select-none"
+                    title="O token de ativação é gerado e fixado automaticamente pelo painel da sua revenda."
                   />
                 </div>
               </div>
