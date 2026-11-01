@@ -95,10 +95,10 @@ export const BACKGROUND_PRESETS: BackgroundPreset[] = [
 // -------------------------------------------------------------
 export const APP_PRESETS: AppPreset[] = [
   {
-    name: "Velo Play",
-    packageName: "com.global.veloplaytv",
-    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/veloplay.png",
-    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/veloplay.apk"
+    name: "Unitv",
+    packageName: "com.global.unitviptv",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/unitv.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/unitv.apk"
   },
   {
     name: "YouCine",
@@ -107,7 +107,7 @@ export const APP_PRESETS: AppPreset[] = [
     deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youcine.apk"
   },
   {
-    name: "YouTube TV",
+    name: "YouTube",
     packageName: "com.google.android.youtube.tv",
     iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/youtube.png",
     deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/youtube.apk"
@@ -125,15 +125,27 @@ export const APP_PRESETS: AppPreset[] = [
     deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/settings.apk"
   },
   {
-    name: "Netflix TV",
-    packageName: "com.netflix.ninja",
+    name: "Netflix",
+    packageName: "com.netflix.mediaclient",
     iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/netflix.png",
-    deepLink: ""
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/netflix.apk"
+  },
+  {
+    name: "Downloader",
+    packageName: "com.esaba.downloader",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/downloader.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/downloader.apk"
+  },
+  {
+    name: "Chrome",
+    packageName: "com.android.chrome",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/chrome.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/chrome.apk"
   },
   {
     name: "Prime Video",
-    packageName: "com.amazon.amazonvideo.livingroom",
-    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/primevideo.png",
-    deepLink: ""
+    packageName: "com.amazon.avod.thirdpartyclient",
+    iconUrl: "https://itdoctorbrasil.site/Launchers/Luna/icon/prime.png",
+    deepLink: "https://itdoctorbrasil.site/Launchers/Luna/apps/prime.apk"
   }
 ];
