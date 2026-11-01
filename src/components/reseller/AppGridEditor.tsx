@@ -60,7 +60,7 @@ export const AppGridEditor: React.FC<AppGridEditorProps> = ({
       name: preset.name,
       packageName: preset.packageName,
       iconUrl: preset.iconUrl,
-      deepLink: preset.deepLink || '' // <-- Atualiza também a URL de Download (deepLink)
+      deepLink: preset.deepLink || '' 
     };
     setApps(updated);
   };
