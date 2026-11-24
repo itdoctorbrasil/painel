@@ -1,6 +1,6 @@
 import React from 'react';
+import { User } from '../../types';
 import { 
-  User, 
   LayoutDashboard, 
   Users, 
   DownloadCloud, 
@@ -10,6 +10,7 @@ import {
   Shield, 
   Image as ImageIcon,
   AppWindow,
+  Layers,
   QrCode,
   Video
 } from 'lucide-react';
@@ -39,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'all_clients', label: 'Todos os dispositivos', icon: UserCheck },
     { id: 'background_editor', label: 'Gerenciar Background', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Aplicativos', icon: AppWindow },
+    { id: 'app_layouts', label: 'Layout', icon: Layers },
     { id: 'boot_video', label: 'Video abertura', icon: Video },
     { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
     { id: 'api_tester', label: 'Baixar Launcher', icon: Code2 }
@@ -50,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'clients', label: 'Gerenciar Clientes', icon: UserCheck },
     { id: 'background_editor', label: 'Plano de fundo', icon: ImageIcon },
     { id: 'apps_editor', label: 'Grade de Apps', icon: AppWindow },
+    { id: 'app_layouts', label: 'Layout', icon: Layers },
     { id: 'boot_video', label: 'Video abertura', icon: Video },
     { id: 'whatsapp_qr', label: 'QR Code WhatsApp', icon: QrCode },
     { id: 'logo_config', label: 'Logo Customizada', icon: ImageIcon },
