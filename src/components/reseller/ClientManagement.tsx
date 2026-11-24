@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ClientDevice } from '../../types';
+import { User, ClientDevice, AppLayout, LayoutSlotId } from '../../types';
 import { 
   UserPlus, 
   Search, 
@@ -11,13 +11,16 @@ import {
   Tv,
   LayoutGrid,
   List,
-  Lock
+  Lock,
+  Layers
 } from 'lucide-react';
 
 interface ClientManagementProps {
   currentUser: User;
   activeResellerView?: User | null;
   clients: ClientDevice[];
+  layout?: AppLayout | null;
+  initialStatusFilter?: 'all' | 'active' | 'expired';
   onSaveClient: (clientData: any) => Promise<void>;
   onRenewClient: (id: string, days: number) => Promise<void>;
   onDeleteClient: (id: string) => Promise<void>;
@@ -28,6 +31,8 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   currentUser,
   activeResellerView,
   clients,
+  layout,
+  initialStatusFilter = 'all',
   onSaveClient,
   onRenewClient,
   onDeleteClient
@@ -39,7 +44,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientDevice | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>(initialStatusFilter);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +64,17 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     deviceToken: targetResellerToken || '',
     expirationDate: getDefaultExpiration(30),
     status: 'active' as 'active' | 'suspended' | 'expired',
+    layoutId: 1 as LayoutSlotId,
     notes: ''
   });
+
+  const getAppsForLayout = (slotId: LayoutSlotId) => {
+    const key = `layout${slotId}` as 'layout1' | 'layout2' | 'layout3';
+    const slotApps = layout?.appLayouts?.[key];
+    if (Array.isArray(slotApps) && slotApps.length > 0) return slotApps.slice(0, 5);
+    if (Array.isArray(layout?.apps) && layout.apps.length > 0) return layout.apps.slice(0, 5);
+    return [];
+  };
 
   const handleQuickDaysSelect = (days: number) => {
     const targetDate = new Date();
@@ -84,6 +98,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
       deviceToken: targetResellerToken || '', // Bloqueia e define o token fixo da revenda
       expirationDate: getDefaultExpiration(30),
       status: 'active',
+      layoutId: 1,
       notes: ''
     });
     setEditingClient(null);
@@ -95,6 +110,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
     const currentExp = c.expirationDate 
       ? new Date(c.expirationDate).toISOString().split('T')[0] 
       : getDefaultExpiration(30);
+    const currentLayoutId: LayoutSlotId = c.layoutId === 2 ? 2 : c.layoutId === 3 ? 3 : 1;
 
     setFormData({
       id: c.id,
@@ -104,6 +120,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
       deviceToken: targetResellerToken || c.deviceToken || '', // Garante o token fixo do revendedor
       expirationDate: currentExp,
       status: c.status,
+      layoutId: currentLayoutId,
       notes: c.notes || ''
     });
     setEditingClient(c);
@@ -140,6 +157,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
         macAddress: cleanMac,
         deviceToken: tokenToSave,
         resellerId: targetResellerId,
+        layoutId: formData.layoutId,
         expirationDate: new Date(formData.expirationDate).toISOString()
       });
       setIsModalOpen(false);
@@ -316,17 +334,22 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                       <p className="text-[11px] font-mono text-slate-400">MAC: {c.macAddress}</p>
                     </div>
                     
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                      c.status === 'suspended'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : isExpired
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                        : isExpiringSoon
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    }`}>
-                      {c.status === 'suspended' ? 'Suspenso' : isExpired ? 'Expirado' : isExpiringSoon ? `Vence em ${diffDays}d` : 'Ativo'}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                        c.status === 'suspended'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : isExpired
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          : isExpiringSoon
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        {c.status === 'suspended' ? 'Suspenso' : isExpired ? 'Expirado' : isExpiringSoon ? `Vence em ${diffDays}d` : 'Ativo'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                        <Layers className="w-3 h-3" /> Layout {c.layoutId === 2 || c.layoutId === 3 ? c.layoutId : 1}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Token */}
@@ -445,6 +468,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   <th className="p-4">Cliente / Dispositivo</th>
                   <th className="p-4">MAC Address</th>
                   <th className="p-4">Token de Ativação</th>
+                  <th className="p-4">Layout</th>
                   <th className="p-4">Validade</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right pr-6">Ações</th>
@@ -457,6 +481,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                     const now = new Date();
                     const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                     const isExpired = diffDays <= 0 || c.status === 'expired' || c.status === 'suspended';
+                    const clientLayoutNum = c.layoutId === 2 || c.layoutId === 3 ? c.layoutId : 1;
 
                     return (
                       <tr key={c.id} className="hover:bg-slate-800/40 transition">
@@ -466,6 +491,11 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                         </td>
                         <td className="p-4 font-mono text-indigo-300">{c.macAddress}</td>
                         <td className="p-4 font-mono text-amber-300 font-bold">{c.deviceToken}</td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1 font-mono bg-indigo-500/15 px-2.5 py-1 rounded-lg text-indigo-300 border border-indigo-500/30 font-bold">
+                            <Layers className="w-3 h-3" /> Layout {clientLayoutNum}
+                          </span>
+                        </td>
                         <td className="p-4">
                           <span className="font-mono bg-indigo-950/60 px-2 py-1 rounded text-indigo-300 border border-indigo-500/30">
                             {expDate.toLocaleDateString('pt-BR')}
@@ -503,7 +533,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
                       Nenhum dispositivo encontrado.
                     </td>
                   </tr>
@@ -517,7 +547,7 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
       {/* Modal Form com Calendário Integrado */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
             
             <h3 className="text-lg font-bold text-white mb-1">
               {editingClient ? 'Editar Cliente / Dispositivo' : 'Cadastrar Novo Cliente (TV Box / Smart TV)'}
@@ -613,18 +643,59 @@ export const ClientManagement: React.FC<ClientManagementProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Status do Aparelho</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                >
-                  <option value="active">Ativo (Acesso Liberado)</option>
-                  <option value="suspended">Suspenso (Acesso Bloqueado)</option>
-                  <option value="expired">Expirado</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Status do Aparelho</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value="active">Ativo (Acesso Liberado)</option>
+                    <option value="suspended">Suspenso (Acesso Bloqueado)</option>
+                    <option value="expired">Expirado</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-400" /> Layout (Apps Fixos)
+                  </label>
+                  <select
+                    value={formData.layoutId}
+                    onChange={(e) => setFormData({ ...formData, layoutId: Number(e.target.value) as LayoutSlotId })}
+                    className="w-full bg-slate-950 border border-slate-800 text-indigo-300 font-semibold rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value={1}>Layout 1 (Padrão)</option>
+                    <option value={2}>Layout 2</option>
+                    <option value={3}>Layout 3</option>
+                  </select>
+                </div>
               </div>
+
+              {/* Resumo dos 5 apps configurados no Layout selecionado */}
+              {(() => {
+                const selectedApps = getAppsForLayout(formData.layoutId);
+                if (selectedApps.length === 0) return null;
+                return (
+                  <div className="bg-slate-950/80 border border-indigo-500/25 rounded-xl p-3 space-y-1.5">
+                    <span className="text-[10px] text-indigo-300 font-mono uppercase tracking-wider block font-bold">
+                      Apps configurados no Layout {formData.layoutId}:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedApps.map((app, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[11px] bg-slate-900 border border-slate-800 text-slate-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1"
+                        >
+                          <span className="text-indigo-400 font-mono font-bold">#{idx + 1}</span>
+                          <span>{app.name || 'Sem nome'}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Observações Internas (Opcional)</label>
