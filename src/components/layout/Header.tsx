@@ -54,6 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Gerenciamento de Backgrounds & Carrossel HD';
       case 'apps_editor':
         return 'Gerencie aqui os aplicativos fixos';
+      case 'app_layouts':
+        return 'Layouts da Grade de Aplicativos';
       case 'logo_config':
         return 'Logo Customizada'; // <--- Título limpo sem White-Label
       case 'whatsapp_qr':
@@ -78,6 +80,8 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Personalize o papel de parede e o carrossel exibido nas TV Boxes';
       case 'apps_editor':
         return 'Configure os atalhos fixos que aparecem na tela inicial do launcher';
+      case 'app_layouts':
+        return 'Configure até 3 layouts independentes para os 5 apps fixos e aplique por aparelho';
       case 'logo_config':
         return 'Faça o upload e gerencie a logo exibida no topo esquerdo do launcher';
       case 'whatsapp_qr':
