@@ -68,6 +68,10 @@ const layoutSchema = new mongoose.Schema({
   logoUrl: { type: String, default: "" },
   bootVideoUrl: { type: String, default: "" },
   apps: Array,
+  appLayouts: {
+    type: mongoose.Schema.Types.Mixed,
+    default: undefined
+  },
   updatedAt: String
 });
 
@@ -79,6 +83,7 @@ const clientSchema = new mongoose.Schema({
   deviceToken: String,
   expirationDate: String,
   status: String,
+  layoutId: { type: Number, default: 1 },
   notes: String,
   lastSeen: String,
   createdAt: String
@@ -233,6 +238,11 @@ async function seedDatabase() {
       logoUrl: "",
       bootVideoUrl: "",
       apps: defaultApps,
+      appLayouts: {
+        layout1: defaultApps,
+        layout2: defaultApps,
+        layout3: defaultApps
+      },
       updatedAt: new Date().toISOString()
     });
   }
@@ -340,7 +350,7 @@ async function resolveLayoutAndClient(macInput?: string, tokenInput?: string) {
   }
 
   const targetId = reseller ? reseller.id : "usr_master";
-  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
+  let layout: any = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
   if (!layout) {
     layout = await Layout.findOne({}) || {
       backgroundUrl: defaultBackgrounds[0],
@@ -391,7 +401,18 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
     });
   }
 
-  const formattedApps = (layout.apps || defaultApps).map((app: any, index: number) => ({
+  const normalizeLayoutSlot = (val: any): 1 | 2 | 3 => {
+    const num = Number(val);
+    return num === 2 ? 2 : num === 3 ? 3 : 1;
+  };
+  const clientLayoutId = normalizeLayoutSlot(client?.layoutId);
+  const layoutKey = `layout${clientLayoutId}` as "layout1" | "layout2" | "layout3";
+  const slotApps = layout?.appLayouts?.[layoutKey];
+  const activeApps = (Array.isArray(slotApps) && slotApps.length > 0)
+    ? slotApps
+    : (Array.isArray(layout?.apps) && layout.apps.length > 0 ? layout.apps : defaultApps);
+
+  const formattedApps = activeApps.map((app: any, index: number) => ({
     id: app.id || `app_${index + 1}`,
     order: index,
     position: index,
@@ -414,6 +435,7 @@ const handleAppsJson = async (req: express.Request, res: express.Response) => {
 
   return res.json({
     status: "success",
+    layoutId: clientLayoutId,
     showWhatsapp,
     whatsapp: cleanWhatsapp,
     whatsappUrl,
@@ -610,6 +632,11 @@ app.post("/api/admin/resellers", async (req, res) => {
       logoUrl: "",
       bootVideoUrl: "",
       apps: defaultApps,
+      appLayouts: {
+        layout1: defaultApps,
+        layout2: defaultApps,
+        layout3: defaultApps
+      },
       updatedAt: new Date().toISOString()
     });
 
@@ -705,10 +732,12 @@ app.get("/api/reseller/clients", async (req, res) => {
 });
 
 app.post("/api/reseller/clients", async (req, res) => {
-  const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, notes } = req.body;
+  const { id, resellerId, clientName, macAddress, deviceToken, days, expirationDate, status, layoutId, notes } = req.body;
 
   const cleanMac = cleanHex(macAddress || deviceToken);
   const formattedMac = cleanMac.match(/.{1,2}/g)?.join(":") || cleanMac;
+  const parsedLayoutId = Number(layoutId);
+  const validLayoutId = [1, 2, 3].includes(parsedLayoutId) ? parsedLayoutId : 1;
 
   if (!clientName || cleanMac.length < 4) {
     return res.status(400).json({ message: "Nome do Cliente e MAC Address válido são obrigatórios." });
@@ -737,6 +766,7 @@ app.post("/api/reseller/clients", async (req, res) => {
     client.deviceToken = formattedMac;
     client.expirationDate = finalExpDate.toISOString();
     client.status = status || "active";
+    if (layoutId !== undefined) client.layoutId = validLayoutId;
     if (notes !== undefined) client.notes = notes;
     if (resellerId) client.resellerId = resellerId;
 
@@ -751,6 +781,7 @@ app.post("/api/reseller/clients", async (req, res) => {
       deviceToken: formattedMac,
       expirationDate: finalExpDate.toISOString(),
       status: status || "active",
+      layoutId: validLayoutId,
       notes: notes || "",
       lastSeen: new Date().toISOString(),
       createdAt: new Date().toISOString()
@@ -789,9 +820,19 @@ app.delete("/api/reseller/clients/:id", async (req, res) => {
   return res.json({ status: "success" });
 });
 
+function buildNormalizedAppLayouts(existing: any) {
+  const baseApps = (Array.isArray(existing?.apps) && existing.apps.length > 0) ? existing.apps : defaultApps;
+  const saved = existing?.appLayouts || {};
+  return {
+    layout1: (Array.isArray(saved.layout1) && saved.layout1.length > 0) ? saved.layout1 : baseApps,
+    layout2: (Array.isArray(saved.layout2) && saved.layout2.length > 0) ? saved.layout2 : baseApps,
+    layout3: (Array.isArray(saved.layout3) && saved.layout3.length > 0) ? saved.layout3 : baseApps
+  };
+}
+
 app.get("/api/reseller/layout/:resellerId", async (req, res) => {
   const targetId = req.params.resellerId;
-  let layout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
+  let layout: any = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
 
   if (!layout) {
     layout = await Layout.create({
@@ -803,17 +844,38 @@ app.get("/api/reseller/layout/:resellerId", async (req, res) => {
       logoUrl: "",
       bootVideoUrl: "",
       apps: defaultApps,
+      appLayouts: {
+        layout1: defaultApps,
+        layout2: defaultApps,
+        layout3: defaultApps
+      },
       updatedAt: new Date().toISOString()
     });
   }
-  return res.json(layout);
+
+  const obj = typeof layout.toObject === "function" ? layout.toObject() : layout;
+  return res.json({
+    ...obj,
+    appLayouts: buildNormalizedAppLayouts(obj)
+  });
 });
 
 app.post("/api/reseller/layout", async (req, res) => {
-  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, bootVideoUrl, apps } = req.body;
+  const { resellerId, backgroundUrl, backgrounds, overlayOpacity, logoUrl, bootVideoUrl, apps, appLayouts } = req.body;
   const targetId = resellerId || "usr_master";
 
-  const existingLayout = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
+  const existingLayout: any = await Layout.findOne({ $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] });
+  const currentAppLayouts = buildNormalizedAppLayouts(existingLayout);
+
+  const mergedAppLayouts = {
+    layout1: Array.isArray(appLayouts?.layout1)
+      ? appLayouts.layout1
+      : (Array.isArray(apps) ? apps : currentAppLayouts.layout1),
+    layout2: Array.isArray(appLayouts?.layout2) ? appLayouts.layout2 : currentAppLayouts.layout2,
+    layout3: Array.isArray(appLayouts?.layout3) ? appLayouts.layout3 : currentAppLayouts.layout3
+  };
+
+  const finalApps = Array.isArray(apps) ? apps : mergedAppLayouts.layout1;
 
   const updatedData = {
     id: "lay_" + targetId,
@@ -823,17 +885,22 @@ app.post("/api/reseller/layout", async (req, res) => {
     overlayOpacity: Number(overlayOpacity ?? existingLayout?.overlayOpacity ?? 0.35),
     logoUrl: logoUrl !== undefined ? logoUrl : (existingLayout?.logoUrl || ""),
     bootVideoUrl: bootVideoUrl !== undefined ? bootVideoUrl : (existingLayout?.bootVideoUrl || ""),
-    apps: Array.isArray(apps) ? apps : (existingLayout?.apps || defaultApps),
+    apps: finalApps,
+    appLayouts: mergedAppLayouts,
     updatedAt: new Date().toISOString()
   };
 
-  let layout = await Layout.findOneAndUpdate(
+  const layout: any = await Layout.findOneAndUpdate(
     { $or: [{ resellerId: targetId }, { id: `lay_${targetId}` }] },
     updatedData,
     { new: true, upsert: true }
   );
 
-  return res.json(layout);
+  const obj = typeof layout?.toObject === "function" ? layout.toObject() : layout;
+  return res.json({
+    ...obj,
+    appLayouts: buildNormalizedAppLayouts(obj)
+  });
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -920,31 +987,51 @@ app.post("/api/admin/ota", async (req, res) => {
   return res.json(ota);
 });
 
-async function startServer() {
-  if (!MONGO_URI) {
-    console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não está definida no Render!");
-    return;
-  }
-
-  try {
-    await mongoose.connect(MONGO_URI);
-    console.log("📦 Conectado ao MongoDB Atlas com sucesso!");
-    await seedDatabase();
-
-    if (process.env.NODE_ENV !== "production") {
-      const { createServer: createViteServer } = await import("vite");
-      const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
-      app.use(vite.middlewares);
-    } else {
-      const distPath = path.join(process.cwd(), "dist");
-      app.use(express.static(distPath));
-      app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
+// Error middleware for graceful handling when MongoDB is offline in preview
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (
+    err?.name === "MongooseError" ||
+    err?.name === "MongoNetworkError" ||
+    err?.message?.includes("buffering timed out") ||
+    err?.message?.includes("Client must be connected")
+  ) {
+    console.warn("[AI Studio] MongoDB offline — retornando fallback gracioso");
+    if (req.method === "GET") {
+      return res.json(req.path.endsWith("s") || req.path.endsWith("s/") ? [] : {});
     }
-
-    app.listen(PORT, () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
-  } catch (err) {
-    console.error("❌ Erro fatal ao conectar ao MongoDB Atlas:", err);
+    return res.status(503).json({
+      error: "Banco de dados MongoDB offline. Configure MONGO_URI nas variáveis de ambiente."
+    });
   }
+  next(err);
+});
+
+async function startServer() {
+  mongoose.set("bufferCommands", false);
+
+  if (!MONGO_URI) {
+    console.warn("⚠️ MONGO_URI não definida — iniciando servidor web sem conexão ao MongoDB Atlas.");
+  } else {
+    try {
+      await mongoose.connect(MONGO_URI);
+      console.log("📦 Conectado ao MongoDB Atlas com sucesso!");
+      await seedDatabase();
+    } catch (err) {
+      console.warn("⚠️ Não foi possível conectar ao MongoDB Atlas — iniciando servidor em modo offline:", err);
+    }
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => res.sendFile(path.join(distPath, "index.html")));
+  }
+
+  app.listen(Number(PORT), "0.0.0.0", () => console.log(`🚀 Luna Launcher Admin executando na porta ${PORT}`));
 }
 
 startServer();
