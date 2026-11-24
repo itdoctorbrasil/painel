@@ -21,13 +21,24 @@ export interface AppItem {
   deepLink?: string;
 }
 
+export type LayoutSlotId = 1 | 2 | 3;
+
+export interface AppLayoutsMap {
+  layout1: AppItem[];
+  layout2: AppItem[];
+  layout3: AppItem[];
+}
+
 export interface AppLayout {
   id: string;
   resellerId: string;
   backgroundUrl: string;
   backgrounds?: string[];
   overlayOpacity: number;
+  logoUrl?: string;
+  bootVideoUrl?: string;
   apps: AppItem[];
+  appLayouts?: AppLayoutsMap;
   updatedAt: string;
 }
 
@@ -39,6 +50,7 @@ export interface ClientDevice {
   deviceToken: string;
   expirationDate: string;
   status: 'active' | 'suspended' | 'expired';
+  layoutId?: LayoutSlotId;
   notes?: string;
   lastSeen?: string;
   createdAt: string;
