@@ -31,6 +31,7 @@ import { OtaManagement } from './components/master/OtaManagement';
 
 import { BackgroundEditor } from './components/reseller/BackgroundEditor';
 import { AppGridEditor } from './components/reseller/AppGridEditor';
+import { AppLayoutsEditor } from './components/reseller/AppLayoutsEditor';
 import { ClientManagement } from './components/reseller/ClientManagement';
 import { ApiTester } from './components/reseller/ApiTester';
 import { WhatsappConfig } from './components/reseller/WhatsappConfig';
@@ -498,6 +499,7 @@ export default function App() {
               currentUser={currentUser}
               activeResellerView={activeResellerView}
               clients={clients}
+              layout={layout}
               onSaveClient={handleSaveClient}
               onRenewClient={handleRenewClient}
               onDeleteClient={handleDeleteClient}
@@ -517,6 +519,15 @@ export default function App() {
 
           {activeTab === 'apps_editor' && (
             <AppGridEditor
+              currentUser={currentUser}
+              activeResellerView={activeResellerView}
+              layout={layout}
+              onSaveLayout={handleSaveLayout}
+            />
+          )}
+
+          {activeTab === 'app_layouts' && (
+            <AppLayoutsEditor
               currentUser={currentUser}
               activeResellerView={activeResellerView}
               layout={layout}
